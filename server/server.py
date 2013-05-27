@@ -3,10 +3,6 @@ from os import urandom
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
 
 #
-# TODO am i dealing with the db connection / cursor correctly?
-#
-# TODO protect against SQL injection
-#
 # TODO link groups with their passengers
 #
 
@@ -15,10 +11,17 @@ _dataBasePath = "CarPool.db"
 _host = "0.0.0.0"
 _port = 8080
 
+# db connection
+# using ? in the SQL protects against injection
+_dbcon = sqlite3.connect(_dataBasePath)
+_dbcon.row_factory = sqlite3.Row
 
+# seconds each session lasts for
 _session_ttl = 3600
+# dict of session ids to sessions
 _sessions = {}
 
+# a user session
 class Session:
     def __init__(self, user_id_):
         self.id = uuid.uuid4()
@@ -32,6 +35,7 @@ class Session:
     def expired(self):
         return long(time.time()) >= self.expires
 
+# get the session object for the current request, or abort HTTP 401
 def getSession():
     try:
         s = _sessions[uuid.UUID(request.json['session_id'])]
@@ -43,32 +47,27 @@ def getSession():
         traceback.print_exc()
         abort(401, 'Invalid session id.')
 
+# check a user's password against the db. True iff authentication successful
 def authenticate(user, pword):
     try:
-        con = sqlite3.connect(_dataBasePath)
-        with con:
-            cur = con.cursor()
-            cur.execute('SELECT * FROM users WHERE phone_number = ?', (int(user),))
-            row = cur.fetchone()
-            salt = row[3]
-            hash = row[4]
-            if hashlib.sha256(salt + pword).hexdigest() == hash:
-                return True
+        row = _dbcon.execute('SELECT * FROM users WHERE phone_number = ?', (int(user),)).fetchone()
+        pwd_salt = row['salt']
+        pwd_hash = row['hash']
+        if hashlib.sha512(pwd_salt + pword).hexdigest() == pwd_hash:
+            return True
     except:
         print('Failure in authenticate()')
         traceback.print_exc()
     return False
 
+# get the unique id for a user (phone number)
 def userID(user):
     try:
-        con = sqlite3.connect(_dataBasePath)
-        with con:
-            cur = con.cursor()
-            cur.execute('SELECT * FROM users WHERE phone_number = ?', (int(user),))
-            return cur.fetchone()[0]
+        return _dbcon.execute('SELECT * FROM users WHERE phone_number = ?', (int(user),)).fetchone()[0]
     except:
         return -1
 
+# API method to register a new user
 @post('/register')
 def register():
     try:
@@ -84,13 +83,14 @@ def register():
         
         # TODO sanity check ?
         
-        salt = hashlib.sha256(urandom(64)).hexdigest()
-        hash = hashlib.sha256(salt + pword).hexdigest()
+        pwd_salt = hashlib.sha512(urandom(128)).hexdigest()
+        pwd_hash = hashlib.sha512(pwd_salt + pword).hexdigest()
         
-        con = sqlite3.connect(_dataBasePath)
-        with con:
-            cur = con.cursor()
-            cur.execute('INSERT INTO users(name, phone_number, salt, hash) VALUES(?, ?, ?, ?)', (name, phone, salt, hash))
+        try:
+            _dbcon.execute('INSERT INTO users VALUES(?, ?, ?, ?, ?)', (None, name, phone, pwd_salt, pwd_hash))
+            _dbcon.commit()
+        finally:
+            _dbcon.rollback()
         
         # init session
         s = Session(userID(user))
@@ -104,6 +104,7 @@ def register():
         traceback.print_exc();
         abort(400, 'Bad register request.')
 
+# API method to login a user
 @post('/login')
 def login():
     try:
@@ -129,6 +130,7 @@ def login():
         traceback.print_exc()
         abort(400, 'Bad login request.')
 
+# API method to create a group
 @post('/createGroup')
 def createGroup():
     s = getSession()
@@ -146,15 +148,19 @@ def createGroup():
         
         # TODO sanity check
         
-        con = sqlite3.connect(_dataBasePath)
-        with con:
-            cur = con.cursor()
-            cur.execute('SELECT * FROM groups WHERE group_name = ?', (name,))
-            if len(cur.fetchall()) > 0:
-                print('createGroup() : group %s already exists.' % name)
-                abort(400, 'A group by that name already exists.')
-            cur.execute('INSERT INTO groups VALUES(?,?,?,?,?,?,?,?,?)',
+        # check the group doesn't already exist
+        # mainly to return helpful errors
+        if _dbcon.execute('SELECT * FROM groups WHERE group_name = ?', (name,)).fetchone():
+            print('createGroup() : group %s already exists.' % name)
+            abort(400, 'A group by that name already exists.')
+        
+        # create the group
+        try:
+            _dbcon.execute('INSERT INTO groups VALUES(?,?,?,?,?,?,?,?,?)',
                 (s.user_id, None, name, origin, destin, t_arr, t_dep, seats, days))
+            _dbcon.commit()
+        finally:
+            _dbcon.rollback()
         
         # TODO return { group : {...} }
         return { }
@@ -166,7 +172,8 @@ def createGroup():
         traceback.print_exc()
         abort(400, 'Bad create group request.')
 
-@delete('/group')
+# API method to delete a goup
+@delete('/group/<id:int>')
 def deleteGroup():
     s = getSession()
     try:
@@ -178,22 +185,26 @@ def deleteGroup():
         traceback.print_exc()
         abort(400, 'Bad delete group request.')
 
-@get('/group')
+# API method to get everything for a group (?)
+@get('/group/<id:int>')
 def getGroup():
     s = getSession()
     # TODO
 
-@put('/group')
+# API method to update stuff for a group (?)
+@put('/group/<id:int>')
 def updateGroup():
     s = getSession()
     # TODO
 
+# API method to get groups user drives
 @get('/getDriverGroups')
 def getDriverGroups():
     s = getSession()
     # TODO
     return {'Key' : ':D'}
 
+# API method to get groups user is a passenger of
 @get('/getPassengerGroups')
 def getPassengerGroups():
     s = getSession()
@@ -203,10 +214,8 @@ def getPassengerGroups():
 # this needs to be at the bottom
 if __name__ == '__main__':
     # init db as necessary
-    con = sqlite3.connect(_dataBasePath)
-    with con:
-        cur = con.cursor()
-        cur.execute("""
+    try:
+        _dbcon.execute("""
                     CREATE TABLE IF NOT EXISTS groups (
                         user_id INTEGER NOT NULL,
                         group_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -220,15 +229,18 @@ if __name__ == '__main__':
                         FOREIGN KEY(user_id) REFERENCES users(user_id)
                     );
                     """)
-        cur.execute("""
+        _dbcon.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         phone_number INTEGER NOT NULL UNIQUE,
-                        salt CHAR (64),
-                        hash CHAR (64)
+                        salt CHAR (128),
+                        hash CHAR (128)
                     );
                     """)
+        _dbcon.commit()
+    finally:
+        _dbcon.rollback()
     
     # 1st arg => port number; 2nd arg => host
     if len(sys.argv) > 1:

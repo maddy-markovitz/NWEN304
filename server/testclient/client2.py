@@ -8,7 +8,7 @@
 {}
 """
 
-﻿import json, requests, sys
+import json, sys, requests
 
 json_headers = { 'Content-type' : 'application/json', 
 				 'Accept' : 'text/plain'}
