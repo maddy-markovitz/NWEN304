@@ -6,6 +6,10 @@ from bottle import route, run, template, get, post, delete, put, request, respon
 # TODO link groups with their passengers
 #
 
+# set _BD_USER to >= 0 to use
+_BD_USER = 1
+_BD_SESSION = None
+
 _dataBasePath = "CarPool.db"
 # default host: all interfaces
 _host = "0.0.0.0"
@@ -13,13 +17,14 @@ _port = 8080
 
 # db connection
 # using ? in the SQL protects against injection
-_dbcon = sqlite3.connect(_dataBasePath)
-_dbcon.row_factory = sqlite3.Row
+_dbcon = None
 
 # seconds each session lasts for
 _session_ttl = 3600
 # dict of session ids to sessions
 _sessions = {}
+
+_group_fields = ('user_id', 'group_id', 'group_name', 'origin', 'destination', 'arrival_time', 'departure_time', 'seats', 'days')
 
 # a user session
 class Session:
@@ -42,7 +47,11 @@ def getSession():
         if s.expired():
             abort(401, 'Session expired.')
         return s
+    except HTTPError:
+        raise
     except:
+        if _BD_USER >= 0:
+            return _BD_SESSION
         print('Invalid session id.')
         traceback.print_exc()
         abort(401, 'Invalid session id.')
@@ -201,8 +210,15 @@ def updateGroup():
 @get('/getDriverGroups')
 def getDriverGroups():
     s = getSession()
-    # TODO
-    return {'Key' : ':D'}
+    
+    res = {}
+    for row in _dbcon.execute("SELECT * FROM groups WHERE user_id = ?", (s.user_id,)):
+        group = {}
+        for g_field in _group_fields:
+            group[g_field] = row[g_field]
+        res[group['group_id']] = group
+    
+    return res
 
 # API method to get groups user is a passenger of
 @get('/getPassengerGroups')
@@ -214,7 +230,10 @@ def getPassengerGroups():
 # this needs to be at the bottom
 if __name__ == '__main__':
     # init db as necessary
+    _dbcon = sqlite3.connect(_dataBasePath)
+    _dbcon.row_factory = sqlite3.Row
     try:
+        # if you change the columns, change the _group_fields tuple (top of file) !!!!
         _dbcon.execute("""
                     CREATE TABLE IF NOT EXISTS groups (
                         user_id INTEGER NOT NULL,
@@ -247,7 +266,10 @@ if __name__ == '__main__':
         _port = int(sys.argv[1])
     if len(sys.argv) > 2:
         _host = sys.argv[2]
-        
+    
+    if _BD_USER >= 0:
+        _BD_SESSION = Session(_BD_USER)
+    
     # run that server
     run(host=_host,port=_port,)
 
