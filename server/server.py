@@ -182,7 +182,7 @@ def createGroup():
         abort(400, 'Bad create group request.')
 
 # API method to delete a goup
-@delete('/group/<id:int>')
+@delete('/group')
 def deleteGroup():
     s = getSession()
     try:
@@ -195,13 +195,13 @@ def deleteGroup():
         abort(400, 'Bad delete group request.')
 
 # API method to get everything for a group (?)
-@get('/group/<id:int>')
+@get('/group')
 def getGroup():
     s = getSession()
     # TODO
 
 # API method to update stuff for a group (?)
-@put('/group/<id:int>')
+@put('/group')
 def updateGroup():
     s = getSession()
     # TODO
@@ -224,8 +224,27 @@ def getDriverGroups():
 @get('/getPassengerGroups')
 def getPassengerGroups():
     s = getSession()
+    
+    # TODO test this
+    
+    res = {}
+    for row in _dbcon.execute("""
+                            SELECT groups.* FROM groups
+                            JOIN usersToGroups ON groups.group_id = usersToGroups.group_id
+                            WHERE usersToGroups.user_id = ?
+                            """, (s.user_id,)):
+        group = {}
+        for g_field in _group_fields:
+            group[g_field] = row[g_field]
+        res[group['group_id']] = group
+    
+    return res
+
+@get("/getPassengers")
+def getPassengers():
+    s = getSession()
+    
     # TODO
-    return {'Key' : ':P'}
 
 # this needs to be at the bottom
 if __name__ == '__main__':
@@ -255,6 +274,15 @@ if __name__ == '__main__':
                         phone_number INTEGER NOT NULL UNIQUE,
                         salt CHAR (128),
                         hash CHAR (128)
+                    );
+                    """)
+        _dbcon.execute("""
+                    CREATE TABLE IF NOT EXISTS usersToGroups (
+                        user_id INTEGER NOT NULL,
+                        group_id INTEGER NOT NULL,
+                        PRIMARY KEY (user_id, group_id),
+                        FOREIGN KEY (user_id) REFERENCES users(user_id),
+                        FOREIGN KEY (group_id) REFERENCES groups(group_id)
                     );
                     """)
         _dbcon.commit()
