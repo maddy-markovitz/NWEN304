@@ -186,8 +186,16 @@ def createGroup():
 def deleteGroup():
     s = getSession()
     try:
-        # TODO deletion by name (or id?)
-        
+	#TODO test this
+
+	# Can we change this to be a JSON method rather than a
+	# URI tunnelling method so we can just get the group id from the JSON?
+	group_id = request.json['group_id']
+	# Delete group from groups table
+
+	dbcon.execute("DELETE FROM groups WHERE group_id = ?", (group_id))
+	# Delete all members from usersToGroups for group
+	dbcon.execute("DELETE FROM usersToGroups WHERE group_id = ?", (group_id))		        
         pass
     except:
         print('Bad delete group request.')
@@ -198,7 +206,17 @@ def deleteGroup():
 @get('/group/<id:int>')
 def getGroup():
     s = getSession()
-    # TODO
+
+    #TODO test this
+    # Assume that we have the group id, specified by id
+    res = {}
+    for row in dbcon.execute("SELECT FROM groups where group_id = ?", (id,)):
+    # I know this is ugly, but it should work for only one group
+    # If you know how to get database results without iterating on the rows,
+    # feel free to change it
+	for g_field in _group_fields:
+            res[g_field] = row[g_field]
+    return res
 
 # API method to update stuff for a group (?)
 @put('/group/<id:int>')
