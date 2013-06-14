@@ -182,7 +182,7 @@ def createGroup():
         abort(400, 'Bad create group request.')
 
 # API method to delete a goup
-@delete('/group')
+@delete('/group/<id:int>')
 def deleteGroup():
     s = getSession()
     try:
@@ -195,13 +195,13 @@ def deleteGroup():
         abort(400, 'Bad delete group request.')
 
 # API method to get everything for a group (?)
-@get('/group')
+@get('/group/<id:int>')
 def getGroup():
     s = getSession()
     # TODO
 
 # API method to update stuff for a group (?)
-@put('/group')
+@put('/group/<id:int>')
 def updateGroup():
     s = getSession()
     # TODO
@@ -245,6 +245,14 @@ def getPassengers():
     s = getSession()
     
     # TODO
+    for row in _dbcon.execute("""SELECT user_id, group_id FROM usersToGroups 
+JOIN users ON users.user_id = usersToGroups.user_id JOIN groups on groups.group_id = usersToGroups.group_id  """):
+        group = {}
+        for g_field in _group_fields:
+            group[g_field] = row[g_field]
+        res[group['group_id']] = group
+    
+    return res
 
 # this needs to be at the bottom
 if __name__ == '__main__':
@@ -276,15 +284,19 @@ if __name__ == '__main__':
                         hash CHAR (128)
                     );
                     """)
-        _dbcon.execute("""
-                    CREATE TABLE IF NOT EXISTS usersToGroups (
-                        user_id INTEGER NOT NULL,
-                        group_id INTEGER NOT NULL,
-                        PRIMARY KEY (user_id, group_id),
-                        FOREIGN KEY (user_id) REFERENCES users(user_id),
-                        FOREIGN KEY (group_id) REFERENCES groups(group_id)
-                    );
-                    """)
+#Create the junction table to accomodate the many-to-many mapping between users and groups
+#Usage instructions to follow
+	_dbcon.execute("""
+		    CREATE TABLE IF NOT EXISTS usersToGroups(
+ 			user_id INTEGER NOT NULL,
+ 			group_id INTEGER NOT NULL,
+ 			CONSTRAINT PK_usersToGroups PRIMARY KEY(
+ 			user_id,
+ 			group_id)
+ 			FOREIGN KEY (user_id) REFERENCES users (user_id),
+ 			FOREIGN KEY (group_id) REFERENCES groups (group_id)
+ 		    );
+	            """)
         _dbcon.commit()
     finally:
         _dbcon.rollback()
