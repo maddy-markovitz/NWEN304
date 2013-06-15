@@ -1,11 +1,33 @@
+#
+# NWEN 304 Project 3
+# <insert project name here, when we've decided on it...>
+# Server
+#
+
+# 1st arg => port number; 2nd arg => host
+
+#
+# IDEAS:
+#   o   change db users.name to users.user_name (consistency)
+#   o   remove extraneous 'get' from routes (not methods)
+#
+# TODO (features):
+#   o   atm, 'driverOf' is a subset of 'passengerOf'. is this the desired behaviour?
+#   o   user notification queue, group notifications
+#   o   group gps broadcast (use notification queues?)
+#
+# TODO (other):
+#   o   test pretty much everything
+#   o   use 'with _dbcon:' to make changes to database
+#
+#
+
 import json, sqlite3, sys, uuid, time, traceback, hashlib
 from os import urandom
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
 
-#
-# TODO link groups with their passengers
-#
-
+# Backdoor user. If no session id is supplied in a request and this is enabled,
+# a session for the user with id _BD_USER will be used.
 # set _BD_USER to >= 0 to use
 _BD_USER = 1
 _BD_SESSION = None
@@ -24,7 +46,9 @@ _session_ttl = 3600
 # dict of session ids to sessions
 _sessions = {}
 
-_group_fields = ('user_id', 'group_id', 'group_name', 'origin', 'destination', 'arrival_time', 'departure_time', 'seats', 'days')
+# tuples of db columns for returning in json. initialised in main.
+_group_fields = None
+_user_fields = None
 
 # a user session
 class Session:
@@ -44,6 +68,7 @@ class Session:
 def getSession():
     try:
         s = _sessions[uuid.UUID(request.json['session_id'])]
+        # sessions don't autorenew atm because client has to be able to deal with it anyway.\
         if s.expired():
             abort(401, 'Session expired.')
         return s
@@ -51,6 +76,9 @@ def getSession():
         raise
     except:
         if _BD_USER >= 0:
+            # prevent backdoor session from expiring
+            if _BD_SESSION.expired():
+                _BD_SESSION = Session(_BD_USER)
             return _BD_SESSION
         print('Invalid session id.')
         traceback.print_exc()
@@ -163,15 +191,19 @@ def createGroup():
             print('createGroup() : group %s already exists.' % name)
             abort(400, 'A group by that name already exists.')
         
-        # create the group
+        # create the group, add entry into usersToGroups
         try:
             _dbcon.execute('INSERT INTO groups VALUES(?,?,?,?,?,?,?,?,?)',
                 (s.user_id, None, name, origin, destin, t_arr, t_dep, seats, days))
+            # get group_id
+            group_id = _dbcon.execute('SELECT * FROM groups WHERE group_name = ?', (name,)).fetchone()['group_id']
+            # add to usersToGroups
+            _dbcon.execute('INSERT INTO usersToGroups VALUES(?,?)', (s.user_id, group_id))
             _dbcon.commit()
         finally:
             _dbcon.rollback()
         
-        # TODO return { group : {...} }
+        # TODO return group info?
         return { }
         
     except HTTPError:
@@ -182,103 +214,211 @@ def createGroup():
         abort(400, 'Bad create group request.')
 
 # API method to delete a goup
-@delete('/group/<id:int>')
+@delete('/group')
 def deleteGroup():
     s = getSession()
+    
+    # TODO test this
+    # also, do we need security on this?
+    # ie, you can only delete a group if you own it
+    
     try:
-	#TODO test this
-
-	# Can we change this to be a JSON method rather than a
-	# URI tunnelling method so we can just get the group id from the JSON?
-	group_id = request.json['group_id']
-	# Delete group from groups table
-
-	dbcon.execute("DELETE FROM groups WHERE group_id = ?", (group_id))
-	# Delete all members from usersToGroups for group
-	dbcon.execute("DELETE FROM usersToGroups WHERE group_id = ?", (group_id))		        
-        pass
+        group_id = request.json['group_id']
+        try:
+            # Delete group from groups table
+            _dbcon.execute("DELETE FROM groups WHERE group_id = ?", (group_id))
+            # Delete all entries from usersToGroups for group
+            _dbcon.execute("DELETE FROM usersToGroups WHERE group_id = ?", (group_id))
+            _dbcon.commit()
+        finally:
+            _dbcon.rollback()
+    except HTTPError:
+        raise
     except:
         print('Bad delete group request.')
         traceback.print_exc()
         abort(400, 'Bad delete group request.')
 
-# API method to get everything for a group (?)
-@get('/group/<id:int>')
+# API method to get everything for a group
+@get('/group')
 def getGroup():
     s = getSession()
 
-    #TODO test this
-    # Assume that we have the group id, specified by id
-    res = {}
-    for row in dbcon.execute("SELECT FROM groups where group_id = ?", (id,)):
-    # I know this is ugly, but it should work for only one group
-    # If you know how to get database results without iterating on the rows,
-    # feel free to change it
-	for g_field in _group_fields:
+    # TODO test this
+    # TODO accept name aswell
+    
+    try:
+        group_id = request.json['group_id']
+        res = {}
+        row = dbcon.execute("SELECT * FROM groups where group_id = ?", (group_id,)).fetchone()
+        for g_field in _group_fields:
             res[g_field] = row[g_field]
-    return res
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad get group request.')
+        traceback.print_exc()
+        abort(400, 'Bad get group request.')
 
-# API method to update stuff for a group (?)
-@put('/group/<id:int>')
+# API method to update stuff for a group
+@put('/group')
 def updateGroup():
     s = getSession()
+    
     # TODO
+    
+    try:
+        group_id = request.json['group_id']
+        
+    except HTTPError:
+        raise
+    except:
+        print('Bad update group request.')
+        traceback.print_exc()
+        abort(400, 'Bad update group request.')
 
 # API method to get groups user drives
+# TODO rename route to 'driverGroups'
 @get('/getDriverGroups')
 def getDriverGroups():
     s = getSession()
     
-    res = {}
-    for row in _dbcon.execute("SELECT * FROM groups WHERE user_id = ?", (s.user_id,)):
-        group = {}
-        for g_field in _group_fields:
-            group[g_field] = row[g_field]
-        res[group['group_id']] = group
-    
-    return res
+    try:
+        res = {}
+        # find all groups owned by user
+        for row in _dbcon.execute("SELECT * FROM groups WHERE user_id = ?", (s.user_id,)):
+            group = {}
+            for g_field in _group_fields:
+                group[g_field] = row[g_field]
+            res[group['group_id']] = group
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad get driver groups request.')
+        traceback.print_exc()
+        abort(400, 'Bad get driver groups request.')
 
-# API method to get groups user is a passenger of
+# API method to get groups user is a passenger (or driver) of
+# TODO rename route to 'passengerGroups'
 @get('/getPassengerGroups')
 def getPassengerGroups():
     s = getSession()
     
-    # TODO test this
+    # TODO test this (properly)
     
-    res = {}
-    for row in _dbcon.execute("""
-                            SELECT groups.* FROM groups
-                            JOIN usersToGroups ON groups.group_id = usersToGroups.group_id
-                            WHERE usersToGroups.user_id = ?
-                            """, (s.user_id,)):
-        group = {}
-        for g_field in _group_fields:
-            group[g_field] = row[g_field]
-        res[group['group_id']] = group
-    
-    return res
+    try:
+        res = {}
+        # use the junction table. join on group id, select by user id
+        for row in _dbcon.execute("""
+                                SELECT groups.* FROM groups
+                                JOIN usersToGroups ON groups.group_id = usersToGroups.group_id
+                                WHERE usersToGroups.user_id = ?
+                                """, (s.user_id,)):
+            group = {}
+            for g_field in _group_fields:
+                group[g_field] = row[g_field]
+            res[group['group_id']] = group
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad get passenger groups request.')
+        traceback.print_exc()
+        abort(400, 'Bad get passenger groups request.')
 
-@get("/getPassengers")
+# API method to get passengers (including driver) of a specified group
+# TODO rename route to 'passengers'
+@get('/getPassengers')
 def getPassengers():
     s = getSession()
     
-    # TODO
-    for row in _dbcon.execute("""SELECT user_id, group_id FROM usersToGroups 
-JOIN users ON users.user_id = usersToGroups.user_id JOIN groups on groups.group_id = usersToGroups.group_id  """):
-        group = {}
-        for g_field in _group_fields:
-            group[g_field] = row[g_field]
-        res[group['group_id']] = group
+    # TODO test this
+    # also, do we need security on this?
+    # ie you can't see passengers in a group if you're not in it
     
-    return res
+    try:
+        group_id = request.json['group_id']
+        res = {}
+        # use the junction table. join on user id, select by group id
+        for row in _dbcon.execute("""
+                                SELECT users.* FROM users
+                                JOIN usersToGroups ON users.user_id = usersToGroups.user_id
+                                WHERE usersToGroups.group_id = ?
+                                """, (group_id,)):
+            user = {}
+            for u_field in _user_fields:
+                user[u_field] = row[u_field]
+            res[user['user_id']] = user
+        # check the requesting user is in the group
+        if not s.user_id in res:
+            # uncomment for security
+            # abort(401, 'Only members of a group can view its passengers.')
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad get passengers request.')
+        traceback.print_exc()
+        abort(400, 'Bad get passengers request.')
 
-# this needs to be at the bottom
+# API method to add a passenger to a group
+@post('passengers')
+def addPassenger():
+    s = getSession()
+    
+    # TODO
+    # also, do we need sucurity on this?
+    # ie you can't add users to a group unless you own that group
+    
+    try:
+        group_id = request.json['group_id']
+        user_id = request.json['user_id']
+        
+    except HTTPError:
+        raise
+    except:
+        print('Bad add passenger request.')
+        traceback.print_exc()
+        abort(400, 'Bad add passenger request.')
+
+# API method to delete a passenger from a group. User id of -1 means 'delete me'.
+@delete('passengers')
+def deletePassenger():
+    s = getSession()
+    
+    # TODO
+    # also, do we need sucurity on this?
+    # ie you can't delete users from a group unless you own that group or are the deletee
+    
+    try:
+        group_id = request.json['group_id']
+        user_id = request.json['user_id']
+        # enable easy self-deletion. invalid id => delete me
+        if user_id < 0:
+            user_id = s.user_id
+        
+    except HTTPError:
+        raise
+    except:
+        print('Bad delete passenger request.')
+        traceback.print_exc()
+        abort(400, 'Bad delete passenger request.')
+
+# 'Main method' : this needs to be at the bottom
 if __name__ == '__main__':
     # init db as necessary
     _dbcon = sqlite3.connect(_dataBasePath)
     _dbcon.row_factory = sqlite3.Row
     try:
-        # if you change the columns, change the _group_fields tuple (top of file) !!!!
+        # these tuples are used for returning json, hence why 'salt' and 'hash' aren't in _user_fields.
+        #
+        # >> IF YOU CHANGE THE COLUMNS, CHANGE THE TUPLES !!!! <<
+        #
+        _group_fields = ('user_id', 'group_id', 'group_name', 'origin', 'destination', 'arrival_time', 'departure_time', 'seats', 'days')
+        _user_fields = ('user_id', 'name', 'phone_number')
+        # create tables if needed
         _dbcon.execute("""
                     CREATE TABLE IF NOT EXISTS groups (
                         user_id INTEGER NOT NULL,
@@ -302,19 +442,15 @@ if __name__ == '__main__':
                         hash CHAR (128)
                     );
                     """)
-#Create the junction table to accomodate the many-to-many mapping between users and groups
-#Usage instructions to follow
-	_dbcon.execute("""
-		    CREATE TABLE IF NOT EXISTS usersToGroups(
- 			user_id INTEGER NOT NULL,
- 			group_id INTEGER NOT NULL,
- 			CONSTRAINT PK_usersToGroups PRIMARY KEY(
- 			user_id,
- 			group_id)
- 			FOREIGN KEY (user_id) REFERENCES users (user_id),
- 			FOREIGN KEY (group_id) REFERENCES groups (group_id)
- 		    );
-	            """)
+        _dbcon.execute("""
+                    CREATE TABLE IF NOT EXISTS usersToGroups (
+                        user_id INTEGER NOT NULL,
+                        group_id INTEGER NOT NULL,
+                        PRIMARY KEY (user_id, group_id),
+                        FOREIGN KEY (user_id) REFERENCES users(user_id),
+                        FOREIGN KEY (group_id) REFERENCES groups(group_id)
+                    );
+                    """)
         _dbcon.commit()
     finally:
         _dbcon.rollback()
@@ -331,7 +467,34 @@ if __name__ == '__main__':
     # run that server
     run(host=_host,port=_port,)
 
-	
+# END.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
