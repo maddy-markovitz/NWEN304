@@ -57,6 +57,29 @@ _port = 8080
 _dbcon = sqlite3.connect(_dataBasePath)
 _dbcon.row_factory = sqlite3.Row
 
+# Reset
+ColorOff="\033[0m"
+
+# Regular Colors
+Black="\033[0;30m"
+Red="\033[0;31m"
+Green="\033[0;32m"
+Yellow="\033[0;33m"
+Blue="\033[0;34m"
+Purple="\033[0;35m"
+Cyan="\033[0;36m"
+White="\033[0;37m"
+
+# Bold
+BBlack="\033[1;30m"
+BRed="\033[1;31m"
+BGreen="\033[1;32m"
+BYellow="\033[1;33m"
+BBlue="\033[1;34m"
+BPurple="\033[1;35m"
+BCyan="\033[1;36m"
+BWhite="\033[1;37m"
+
 class NoSuchUserError(Exception):
     def __init__(self, user_id=None, phone=None):
         if user_id != None:
@@ -243,7 +266,7 @@ class Group(object):
                 try:
                     groups.append(Group.forID(group_id))
                 except NoSuchGroupError:
-                    print 'DBCHECK: %s is in non-existent group with id=%d.' % (user, group_id)
+                    print Red + 'DBCHECK: %s is in non-existent group with id=%d.' % (user, group_id) + ColorOff
             groups = tuple(groups)
             cls._by_user_id[user.id] = groups
             return groups
@@ -371,17 +394,17 @@ class Group(object):
                 try:
                     users.append(User.forID(user_id))
                 except NoSuchUserError:
-                    print 'DBCHECK: %s has non-existent user with id=%d.' % (self, user_id)
+                    print Red + 'DBCHECK: %s has non-existent user with id=%d.' % (self, user_id) + ColorOff
             if not self.owner in users:
                 users.append(self.owner)
-                print 'DBCHECK: Owner of %s is not in its users. Fixing.' % self
+                print Yellow + 'DBCHECK: Owner of %s is not in its users. Fixing.' % self + ColorOff
                 try:
                     # add to db
                     _dbcon.execute('INSERT INTO usersToGroups VALUES(?,?)', (self.owner.id, self.id))
                     _dbcon.commit()
                 except:
                     _dbcon.rollback()
-                    print 'DBCHECK: Error fixing %s.' % self
+                    print Red + 'DBCHECK: Error fixing %s.' % self + ColorOff
                     traceback.print_exc()
             self._users = tuple(users)
         return self._users
@@ -627,10 +650,12 @@ def register():
         # return session 'cookie'
         return s.toDict()
         
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in register():'
+        print Red + 'Error in register():' + ColorOff
         traceback.print_exc();
         raise
 
@@ -658,10 +683,12 @@ def login():
         # return session 'cookie'
         return s.toDict()
         
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in login():'
+        print Red + 'Error in login():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -670,12 +697,12 @@ def logout():
     s = getSession()
     try:
         s.expire()
-        # return somethinf useful?
+        # return something useful?
         return {}
     except HTTPError:
         raise
     except:
-        print 'Error in logout():'
+        print Red + 'Error in logout():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -705,10 +732,12 @@ def createGroup():
         
         return group.toDict()
         
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in createGroup():'
+        print Red + 'Error in createGroup():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -726,12 +755,15 @@ def deleteGroup():
         group.delete()
         # TODO return something useful?
         return {}
+        
     except NoSuchGroupError as e:
         abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in deleteGroup():'
+        print Red + 'Error in deleteGroup():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -743,16 +775,20 @@ def getGroup():
     # TODO test this
     
     try:
-        group_id = request.json['group_id']
-        group_name = request.json['group_name']
+        # using get gives None instead of a KeyError
+        group_id = request.json.get('group_id')
+        group_name = request.json.get('group_name')
         group = Group.forAny(group_id=group_id, group_name=group_name)
         return group.toDict()
+        
     except NoSuchGroupError as e:
         abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Bad get group request.'
+        print Red + 'Error in getGroup():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -764,15 +800,25 @@ def updateGroup():
     # TODO
     
     try:
+        name = request.json.get('name')
+        origin = request.json.get('origin')
+        destin = request.json.get('destination')
+        t_arr = request.json.get('arrival_time')
+        t_dep = request.json.get('departure_time')
+        seats = request.json.get('seats')
+        days = request.json.get('days')
         group = Group.forID(request.json['group_id'])
         
         return group.toDict()
+        
     except NoSuchGroupError as e:
         abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in updateGroup():'
+        print Red + 'Error in updateGroup():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -788,10 +834,11 @@ def getDriverGroups():
         for group in Group.forOwner(s.user):
             res[group.id] = group.toDict()
         return res
+        
     except HTTPError:
         raise
     except:
-        print 'Error in getDriverGroups():'
+        print Red + 'Error in getDriverGroups():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -807,10 +854,11 @@ def getPassengerGroups():
         for group in Group.forUser(s.user):
             res[group.id] = group.toDict()
         return res
+        
     except HTTPError:
         raise
     except:
-        print 'Error in getPassengerGroups():'
+        print Red + 'Error in getPassengerGroups():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -830,12 +878,15 @@ def getPassengers():
         for user in group:
             res[user.id] = user.toDict()
         return res
+        
     except NoSuchGroupError as e:
         abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in getPassengers():'
+        print Red + 'Error in getPassengers():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -854,12 +905,15 @@ def addPassenger():
         group += user
         # TODO return something useful?
         return {}
+        
     except (NoSuchUserError, NoSuchGroupError) as e:
         abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in addPassenger():'
+        print Red + 'Error in addPassenger():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -871,7 +925,7 @@ def deletePassenger():
     # TODO test this
     
     try:
-        user_id = request.json['user_id']
+        user_id = request.json.get('user_id')
         group = Group.forID(request.json['group_id'])
         user = User.forID(user_id) if user_id >= 0 else s.user
         # can't delete users from a group unless you own that group or are the deletee
@@ -882,10 +936,15 @@ def deletePassenger():
         group -= user
         # TODO return something useful?
         return {}
+    
+    except (NoSuchUserError, NoSuchGroupError) as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
     except HTTPError:
         raise
     except:
-        print 'Error in deletePassenger():'
+        print Red + 'Error in deletePassenger():' + ColorOff
         traceback.print_exc()
         raise
 
@@ -938,8 +997,8 @@ if __name__ == '__main__':
     if _BD_USER_ID >= 0:
         _BD_SESSION = Session(User.forID(_BD_USER_ID))
         print ''
-        print '\t\t**** BACKDOOR OPEN ****'
-        print '\tBackdoor: %s' % _BD_SESSION
+        print Red + '\t\t**** BACKDOOR OPEN ****' + ColorOff
+        print Red + '\tBackdoor: %s' % _BD_SESSION + ColorOff
         print ''
     
     # run that server
