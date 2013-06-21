@@ -61,7 +61,7 @@ class NoSuchUserError(Exception):
     def __init__(self, user_id=None, phone=None):
         if user_id != None:
             self.message = 'No user found with id=%d.' % int(user_id)
-        elif phone_number != None:
+        elif phone != None:
             self.message = 'No user found with phone_number=%d.' % int(phone)
         else:
             self.message = 'No arguments supplied.'
