@@ -310,6 +310,41 @@ class Group(object):
         self._days = g_row['days']
         self._users = None
     
+    def update(self, name=None, origin=None, destination=None, arrival=None, departure=None, seats=None, days=None):
+        """ Update any subset of the editable group parameters. """
+        # skip empty updates
+        if (name, origin, destination, arrival, departure, seats, days) == (None,) * 7:
+            return
+        # TODO sanity check? relying on db constraints atm
+        # updating the name will fail if not unique because of this
+        try:
+            _dbcon.execute("""
+                        UPDATE groups
+                        SET group_name = ?, origin = ?, destination = ?,
+                        arrival_time = ?, departure_time = ?, seats = ?, days = ?
+                        WHERE group_id = ?
+                        """,
+                        (name if name != None else self._name,
+                        origin if origin != None else self._origin,
+                        destination if destination != None else self._destination,
+                        arrival if arrival != None else self._arrival,
+                        departure if departure != None else self._departure,
+                        seats if seats != None else self._seats,
+                        days if days != None else self._days,
+                        self.id))
+            _dbcon.commit()
+        finally:
+            _dbcon.rollback()
+        # db update succeeded, update fields
+        g_row = _dbcon.execute('SELECT * FROM groups WHERE group_id = ?', (self.id,)).fetchone()
+        self._name = g_row['group_name']
+        self._origin = g_row['origin']
+        self._destination = g_row['destination']
+        self._arrival = g_row['arrival_time']
+        self._departure = g_row['departure_time']
+        self._seats = g_row['seats']
+        self._days = g_row['days']
+    
     @property
     def owner(self):
         return self._owner
@@ -324,9 +359,7 @@ class Group(object):
     
     @name.setter
     def name(self, name):
-        raise Exception('Not implemented yet!')
-        self._name = name
-        # TODO check uniqueness then write to db?
+        self.update(name=name)
     
     @property
     def users(self):
@@ -359,12 +392,7 @@ class Group(object):
     
     @origin.setter
     def origin(self, origin):
-        try:
-            _dbcon.execute('UPDATE groups SET origin = ? WHERE group_id = ?', (origin, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._origin = origin
+        self.update(origin=origin)
     
     @property
     def destination(self):
@@ -372,12 +400,7 @@ class Group(object):
     
     @destination.setter
     def destination(self, destination):
-        try:
-            _dbcon.execute('UPDATE groups SET destination = ? WHERE group_id = ?', (destination, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._destination = destination
+        self.update(destination=destination)
     
     @property
     def arrival(self):
@@ -385,12 +408,7 @@ class Group(object):
     
     @arrival.setter
     def arrival(self, arrival):
-        try:
-            _dbcon.execute('UPDATE groups SET arrival_time = ? WHERE group_id = ?', (arrival, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._arrival = arrival
+        self.update(arrival=arrival)
     
     @property
     def departure(self):
@@ -398,12 +416,7 @@ class Group(object):
     
     @departure.setter
     def departure(self, departure):
-        try:
-            _dbcon.execute('UPDATE groups SET departure_time = ? WHERE group_id = ?', (departure, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._departure = departure
+        self.update(departure=departure)
     
     @property
     def seats(self):
@@ -411,12 +424,7 @@ class Group(object):
     
     @seats.setter
     def seats(self, seats):
-        try:
-            _dbcon.execute('UPDATE groups SET seats = ? WHERE group_id = ?', (seats, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._seats = seats
+        self.update(seats=seats)
     
     @property
     def days(self):
@@ -424,12 +432,7 @@ class Group(object):
     
     @days.setter
     def days(self, days):
-        try:
-            _dbcon.execute('UPDATE groups SET days = ? WHERE group_id = ?', (days, self.id))
-            _dbcon.commit()
-        finally:
-            _dbcon.rollback()
-        self._days = days
+        self.update(days=days)
     
     def __contains__(self, user):
         """ True iff user is in this group (driver or passenger). """
@@ -807,7 +810,7 @@ def getPassengerGroups():
     except HTTPError:
         raise
     except:
-        print('Error in getPassengerGroups():')
+        print 'Error in getPassengerGroups():'
         traceback.print_exc()
         raise
 
@@ -832,7 +835,7 @@ def getPassengers():
     except HTTPError:
         raise
     except:
-        print('Bad get passengers request.')
+        print 'Error in getPassengers():'
         traceback.print_exc()
         raise
 
@@ -856,9 +859,9 @@ def addPassenger():
     except HTTPError:
         raise
     except:
-        print('Bad add passenger request.')
+        print 'Error in addPassenger():'
         traceback.print_exc()
-        abort(400, 'Bad add passenger request.')
+        raise
 
 # API method to delete a passenger from a group. Absent or less than 0 means 'delete me'.
 @delete('passengers')
@@ -882,9 +885,9 @@ def deletePassenger():
     except HTTPError:
         raise
     except:
-        print('Bad delete passenger request.')
+        print 'Error in deletePassenger():'
         traceback.print_exc()
-        abort(400, 'Bad delete passenger request.')
+        raise
 
 # 'Main method' : this needs to be at the bottom
 if __name__ == '__main__':
