@@ -37,7 +37,7 @@
 #
 #
 
-import json, sqlite3, sys, uuid, time, traceback, hashlib
+import json, sqlite3, sys, uuid, time, traceback, hashlib, re
 from os import urandom
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
 
@@ -70,7 +70,7 @@ Purple="\033[0;35m"
 Cyan="\033[0;36m"
 White="\033[0;37m"
 
-# Bold
+# Bold Colors
 BBlack="\033[1;30m"
 BRed="\033[1;31m"
 BGreen="\033[1;32m"
@@ -81,13 +81,24 @@ BCyan="\033[1;36m"
 BWhite="\033[1;37m"
 
 class NoSuchUserError(Exception):
-    def __init__(self, user_id=None, phone=None):
+    def __init__(self, user_id=None, phone=None, message=None):
         if user_id != None:
-            self.message = 'No user found with id=%d.' % int(user_id)
+            Exception.__init__(self, 'No user found with id=%d.' % int(user_id))
         elif phone != None:
-            self.message = 'No user found with phone_number=%d.' % int(phone)
+            Exception.__init__(self, 'No user found with phone_number=%d.' % int(phone))
+        elif message != None:
+            Exception.__init__(self, message)
         else:
-            self.message = 'No arguments supplied.'
+            Exception.__init__(self, 'No arguments supplied.')
+
+class UserSanityError(Exception):
+    def __init__(self, field=None, message=None):
+        if message != None:
+            Exception.__init__(self, message)
+        elif field != None:
+            Exception.__init__(self, 'User field %s was not valid.' % field)
+        else:
+            Exception.__init__(self, 'No arguments supplied.')
 
 class User(object):
     """ A user. Persistent (at least in memory, ie. doesn't die with or rely on a session).
@@ -97,6 +108,52 @@ class User(object):
     _by_id = {}
     # dict of phone numbers to users
     _by_phone = {}
+    
+    @classmethod
+    def validatePhone(cls, phone, noneval=None):
+        if phone == None:
+            return noneval
+        try:
+            phone = str(long(phone))
+            # TODO fancier phone validity?
+            if not re.match(r'^[0-9]+$', phone):
+                raise UserSanityError(message='User phone must look like 0223456789.')
+            return long(phone)
+        except UserSanityError:
+            raise
+        except:
+            raise UserSanityError(field='phone')
+    
+    @classmethod
+    def validateName(cls, name, noneval=None):
+        if name == None:
+            return noneval
+        try:
+            name = unicode(name)
+            if len(name) < 3:
+                raise UserSanityError(message='User name must be at least 3 characters.')
+            if not re.match(r'^\w*$', name):
+                raise UserSanityError(message='User name must consist on only a-z, A-Z, 0-9 and _.')
+            return name
+        except UserSanityError:
+            raise
+        except:
+            raise UserSanityError(field='name')
+    
+    @classmethod
+    def validatePassword(cls, password, noneval=None):
+        if password == None:
+            return noneval
+        try:
+            password = unicode(password)
+            if len(password) < 6:
+                raise UserSanityError(message='User password must be at least 6 characters.')
+            # TODO is a char check necessary?
+            return password
+        except UserSanityError:
+            raise
+        except:
+            raise UserSanityError(field='password')
     
     @classmethod
     def forAny(cls, user_id=None, phone=None):
@@ -109,9 +166,11 @@ class User(object):
     @classmethod
     def forID(cls, user_id):
         """ Get a user by id. Throws NoSuchUserError. """
-        user_id = int(user_id)
         try:
+            user_id = int(user_id)
             return cls._by_id[user_id]
+        except ValueError:
+            raise NoSuchUserError()
         except KeyError:
             # this may throw NoSuchUserError
             user = User(user_id=user_id)
@@ -122,9 +181,11 @@ class User(object):
     @classmethod
     def forPhone(cls, phone):
         """ Get a user by phone number. Throws NoSuchUserError. """
-        phone = int(phone)
         try:
+            phone = long(phone)
             return cls._by_phone[phone]
+        except ValueError:
+            return None
         except KeyError:
             # this may throw NoSuchUserError
             user = User(phone=phone)
@@ -135,11 +196,19 @@ class User(object):
     @classmethod
     def create(cls, phone, name, password):
         """ Create a user. Throws if phone not unique (DB check)."""
-        
-        # TODO sanity check ?
-        
+        phone = cls.validatePhone(phone)
+        name = cls.validateName(name)
+        password = cls.validatePassword(password)
+        try:
+            User.forPhone(phone)
+            raise UserSanityError(message='Phone not unique.')
+        except NoSuchUserError:
+            # good, users doesn't exist
+            pass
+        # generate a secure random salt and hash the password with it
         pwd_salt = hashlib.sha512(urandom(128)).hexdigest()
         pwd_hash = hashlib.sha512(pwd_salt + password).hexdigest()
+        # create user
         try:
             _dbcon.execute('INSERT INTO users VALUES(?, ?, ?, ?, ?)', (None, name, phone, pwd_salt, pwd_hash))
             _dbcon.commit()
@@ -159,11 +228,11 @@ class User(object):
         # throw error if not found
         if not row:
             raise NoSuchUserError(user_id=user_id, phone=phone)
-        self.id = row['user_id']
-        self.name = row['user_name']
-        self.phone = row['phone_number']
-        self.pwd_salt = row['salt']
-        self.pwd_hash = row['hash']
+        self.id = int(row['user_id'])
+        self.name = unicode(row['user_name'])
+        self.phone = long(row['phone_number'])
+        self.pwd_salt = str(row['salt'])
+        self.pwd_hash = str(row['hash'])
         # init notification queue. poll from index 0
         self._notifications = []
     
@@ -196,13 +265,24 @@ class Notification(object):
         pass
 
 class NoSuchGroupError(Exception):
-    def __init__(self, group_id=None, group_name=None):
+    def __init__(self, group_id=None, group_name=None, message=None):
         if group_id != None:
-            self.message = 'No group found with id=%d.' % int(group_id)
+            Exception.__init__(self, 'No group found with id=%d.' % int(group_id))
         elif group_name != None:
-            self.message = 'No group found with name=%s.' % group_name
+            Exception.__init__(self, 'No group found with name=%s.' % group_name)
+        elif message != None:
+            Exception.__init__(self, message)
         else:
-            self.message = 'No arguments supplied.'
+            Exception.__init__(self, 'No arguments supplied.')
+
+class GroupSanityError(Exception):
+    def __init__(self, field=None, message=None):
+        if message != None:
+            Exception.__init__(self, message)
+        elif field != None:
+            Exception.__init__(self, 'Group field %s was not valid.' % field)
+        else:
+            Exception.__init__(self, 'No arguments supplied.')
 
 class Group(object):
     """ A carpool group. Persistent. Do not call constructor directly, use Group.forID(), Group.forName()
@@ -218,6 +298,106 @@ class Group(object):
     _by_user_id = {}
     
     @classmethod
+    def validateName(cls, name, noneval=None):
+        if name == None:
+            return noneval
+        try:
+            name = unicode(name)
+            if len(name) < 3:
+                raise GroupSanityError(message='Group name must be at least 3 characters.')
+            if not re.match(r'^\w*$', name):
+                raise GroupSanityError(message='Group name must consist on only a-z, A-Z, 0-9 and _.')
+            return name
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='name')
+    
+    @classmethod
+    def validateOrigin(cls, origin, noneval=None):
+        if origin == None:
+            return noneval
+        try:
+            origin = unicode(origin)
+            # TODO ?
+            return origin
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='origin')
+    
+    @classmethod
+    def validateDestination(cls, destination, noneval=None):
+        if destination == None:
+            return noneval
+        try:
+            destination = unicode(destination)
+            # TODO ?
+            return destination
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='destination')
+    
+    @classmethod
+    def validateArrival(cls, arrival, noneval=None):
+        if arrival == None:
+            return noneval
+        try:
+            arrival = str(arrival)
+            if not re.match(r'[0-2][0-9]:[0-5][0-9]:[0-5][0-9]', arrival):
+                raise GroupSanityError(message='Group arrival must look like 13:54:00.')
+            return arrival
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='arrival')
+    
+    @classmethod
+    def validateDeparture(cls, departure, noneval=None):
+        if departure == None:
+            return noneval
+        try:
+            departure = str(departure)
+            if not re.match(r'[0-2][0-9]:[0-5][0-9]:[0-5][0-9]', departure):
+                raise GroupSanityError(message='Group departure must look like 13:54:00.')
+            return departure
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='departure')
+    
+    @classmethod
+    def validateSeats(cls, seats, noneval=None):
+        if seats == None:
+            return noneval
+        try:
+            seats = int(seats)
+            if seats < 1:
+                raise GroupSanityError(message='Group seats must be at least 1.')
+            return seats
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='seats')
+    
+    @classmethod
+    def validateDays(cls, days, noneval=None):
+        if days == None:
+            return noneval
+        try:
+            days = str(days)
+            if len(days) != 7:
+                raise GroupSanityError(message='Group days must be of length 7.')
+            if not re.match(r'^[01]*$', days):
+                raise GroupSanityError(message='Group days must only consist of 0s and 1s.')
+            return days
+        except GroupSanityError:
+            raise
+        except:
+            raise GroupSanityError(field='days')
+    
+    @classmethod
     def forAny(cls, group_id=None, group_name=None):
         """ Gets a group by id or name. """
         if group_id != None:
@@ -228,9 +408,11 @@ class Group(object):
     @classmethod
     def forID(cls, group_id):
         """ Get a group by id. Throws NoSuchGroupError. """
-        group_id = int(group_id)
         try:
+            group_id = int(group_id)
             return cls._by_id[group_id]
+        except ValueError:
+            return None
         except KeyError:
             # this may throw NoSuchGroupError
             group = Group(group_id=group_id)
@@ -241,9 +423,11 @@ class Group(object):
     @classmethod
     def forName(cls, group_name):
         """ Get a group by name. Throws NoSuchGroupError. """
-        group_name = str(group_name)
         try:
+            group_name = unicode(group_name)
             return cls._by_name[group_name]
+        except ValueError:
+            return None
         except KeyError:
             # this may throw NoSuchGroupError
             group = Group(group_name=group_name)
@@ -254,7 +438,7 @@ class Group(object):
     @classmethod
     def forUser(cls, user):
         """ Gets a tuple of all groups a user is in. """
-        if not user:
+        if not isinstance(user, User):
             return ()
         try:
             return cls._by_user_id[user.id]
@@ -274,7 +458,7 @@ class Group(object):
     @classmethod
     def forOwner(cls, owner):
         """ Gets a tuple of all groups owned by a user. """
-        if not owner:
+        if not isinstance(owner, User):
             return ()
         try:
             return cls._by_owner_id[owner.id]
@@ -289,11 +473,24 @@ class Group(object):
     @classmethod
     def create(cls, owner, name, origin, destination, arrival, departure, seats, days):
         """ Create a group. Throws if name isn't unique (DB check). """
-        if not owner:
-            raise Exception('Owner must not be None.')
-        
-        # TODO sanity check
-        
+        if not isinstance(owner, User):
+            raise Exception('Owner must be an instance of User.')
+        if None in (name, origin, destination, arrival, departure, seats, days):
+            raise Exception('All parameters must be not None.')
+        # sanity check
+        name = cls.validateName(name)
+        origin = cls.validateOrigin(origin)
+        destination = cls.validateDestination(destination)
+        arrival = cls.validateArrival(arrival)
+        departure = cls.validateDeparture(departure)
+        seats = cls.validateSeats(seats)
+        days = cls.validateDays(days)
+        try:
+            Group.forName(name)
+            raise GroupSanityError(message='Group name is not unique.')
+        except NoSuchGroupError:
+            # good, group doesn't exist
+            pass
         # create the group, add entry into usersToGroups
         try:
             _dbcon.execute('INSERT INTO groups VALUES(?,?,?,?,?,?,?,?,?)',
@@ -323,50 +520,50 @@ class Group(object):
         if not g_row:
             raise NoSuchGroupError(group_id=group_id, group_name=group_name)
         self._owner = User.forID(g_row['user_id'])
-        self._id = g_row['group_id']
-        self._name = g_row['group_name']
-        self._origin = g_row['origin']
-        self._destination = g_row['destination']
-        self._arrival = g_row['arrival_time']
-        self._departure = g_row['departure_time']
-        self._seats = g_row['seats']
-        self._days = g_row['days']
+        self._id = int(g_row['group_id'])
+        self._name = unicode(g_row['group_name'])
+        self._origin = unicode(g_row['origin'])
+        self._destination = unicode(g_row['destination'])
+        self._arrival = str(g_row['arrival_time'])
+        self._departure = str(g_row['departure_time'])
+        self._seats = int(g_row['seats'])
+        self._days = str(g_row['days'])
         self._users = None
     
     def update(self, name=None, origin=None, destination=None, arrival=None, departure=None, seats=None, days=None):
         """ Update any subset of the editable group parameters. """
         # skip empty updates
-        if (name, origin, destination, arrival, departure, seats, days) == (None,) * 7:
+        if all([x == None for x in (name, origin, destination, arrival, departure, seats, days)]):
             return
-        # TODO sanity check? relying on db constraints atm
-        # updating the name will fail if not unique because of this
+        # sanity check, and sub in non-updating values
+        name = cls.validateName(name, self._name)
+        origin = cls.validateOrigin(origin, self._origin)
+        destination = cls.validateDestination(destination, self._destination)
+        arrival = cls.validateArrival(arrival, self._arrival)
+        departure = cls.validateDeparture(departure, self._departure)
+        seats = cls.validateSeats(seats, self._seats)
+        days = cls.validateDays(days, self._days)
         try:
+            # update the entire row because that's easier
+            # you can't do multiple updates in 1 commit
             _dbcon.execute("""
                         UPDATE groups
                         SET group_name = ?, origin = ?, destination = ?,
                         arrival_time = ?, departure_time = ?, seats = ?, days = ?
                         WHERE group_id = ?
                         """,
-                        (name if name != None else self._name,
-                        origin if origin != None else self._origin,
-                        destination if destination != None else self._destination,
-                        arrival if arrival != None else self._arrival,
-                        departure if departure != None else self._departure,
-                        seats if seats != None else self._seats,
-                        days if days != None else self._days,
-                        self.id))
+                        (name, origin, destination, arrival, departure, seats, days, self.id))
             _dbcon.commit()
         finally:
             _dbcon.rollback()
         # db update succeeded, update fields
-        g_row = _dbcon.execute('SELECT * FROM groups WHERE group_id = ?', (self.id,)).fetchone()
-        self._name = g_row['group_name']
-        self._origin = g_row['origin']
-        self._destination = g_row['destination']
-        self._arrival = g_row['arrival_time']
-        self._departure = g_row['departure_time']
-        self._seats = g_row['seats']
-        self._days = g_row['days']
+        self._name = name
+        self._origin = origin
+        self._destination = destination
+        self._arrival = arrival
+        self._departure = departure
+        self._seats = seats
+        self._days = days
     
     @property
     def owner(self):
@@ -636,20 +833,19 @@ def getSession():
 @post('/register')
 def register():
     try:
-        phone = int(request.json['phone_number'])
+        phone = request.json['phone_number']
         name = request.json['name']
         password = request.json['password']
         
-        if User.forPhone(phone):
-            print 'register(): phone %d in use.' % phone
-            abort(400, 'Phone number already in use.')
-        
+        # this handles the uniqueness check
         user = User.create(phone, name, password)
         s = Session.forUser(user)
         
         # return session 'cookie'
         return s.toDict()
         
+    except UserSanityError as e:
+        abort(400, e.message)
     except KeyError:
         abort(400, 'Missing parameter')
     except HTTPError:
@@ -719,19 +915,16 @@ def createGroup():
         seats = request.json['seats']
         days = request.json['days']
         
-        # check the group doesn't already exist
-        if Group.forName(name):
-            print('createGroup() : group %s already exists.' % name)
-            abort(400, 'A group by that name already exists.')
-        
-        # TODO sanity check (properly)
         if None in (name, origin, destin, t_arr, t_dep, seats, days):
             abort(400, 'All group fields apart from id must be supplied.')
         
+        # this handles the uniqueness check
         group = Group.create(s.user, name, origin, destin, t_arr, t_dep, seats, days)
         
         return group.toDict()
         
+    except GroupSanityError as e:
+        abort(400, e.message)
     except KeyError:
         abort(400, 'Missing parameter')
     except HTTPError:
@@ -809,8 +1002,12 @@ def updateGroup():
         days = request.json.get('days')
         group = Group.forID(request.json['group_id'])
         
+        group.update(name=name, origin=origin, destination=destin, arrival=t_arr, departure=t_dep, seats=seats, days=days)
+        
         return group.toDict()
         
+    except GroupSanityError as e:
+        abort(400, e.message)
     except NoSuchGroupError as e:
         abort(400, e.message)
     except KeyError:
