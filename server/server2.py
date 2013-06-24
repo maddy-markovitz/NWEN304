@@ -237,7 +237,7 @@ class User(object):
         self._notifications = []
     
     def authenticate(self, password):
-        """ Authenticate a user by password. Returns True iff successfull. """
+        """ Authenticate this user by password. Returns True iff successfull. """
         return hashlib.sha512(self.pwd_salt + password).hexdigest() == self.pwd_hash
     
     def pollNotification(self):
@@ -246,6 +246,10 @@ class User(object):
             return _notifications.pop(0)
         except IndexError:
             return None
+    
+    def pushNotification(self, notification):
+        """ Enqueue a notification for this user. """
+        _notifications.append(notification)
     
     def __str__(self):
         return 'User[id=%d,name=%s]' % (self.id, self.name)
@@ -259,9 +263,78 @@ class User(object):
         return d
 
 class Notification(object):
-    """ TODO """
+    def __init__(self, to, tag, message):
+        self.created = long(time.time())
+        self.to = to
+        self.tag = tag
+        self.message = message
     
-    def __init__(self):
+    def toDict(self):
+        """ Create a dict representation for returning as JSON. """
+        d = {}
+        d['created'] = self.created
+        d['to_id'] = self.to.id
+        d['tag'] = self.tag
+        d['message'] = self.message
+        return d
+
+class GroupUserAddNotification(Notification):
+    def __init__(self, to, user, group):
+        if to == user:
+            message = 'You were added to group %s.' % group.name
+        else:
+            message = '%s was added to group %s.' % (user.name, group.name)
+        Notification.__init__(self, to, 'group_user_add', message)
+        self.user = user
+        self.group = group
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['user_id'] = self.user.id
+        d['group_id'] = self.group.id
+        return d
+
+class GroupUserDeleteNotification(Notification):
+    def __init__(self, to, user, group):
+        if to == user:
+            message = 'You were deleted from group %s.' % group.name
+        else:
+            message = '%s was deleted from group %s.' % (user.name, group.name)
+        Notification.__init__(self, to, 'group_user_delete', message)
+        self.user = user
+        self.group = group
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['user_id'] = self.user.id
+        d['group_id'] = self.group.id
+        return d
+
+class GroupDeleteNotification(Notification):
+    def __init__(self, to, group):
+        Notification.__init__(self, to, 'group_delete', 'Group %s was deleted.' % group.name)
+        self.group = group
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['group_id'] = self.group.id
+
+class InviteNotification(Notification):
+    def __init__(self, to, user, group):
+        # TODO
+        pass
+    
+    def toDict(self):
+        # TODO
+        pass
+
+class RequestNotification(Notification):
+    def __init__(self, to, user, group):
+        # TODO
+        pass
+    
+    def toDict(self):
+        # TODO
         pass
 
 class NoSuchGroupError(Exception):
@@ -664,8 +737,8 @@ class Group(object):
     
     def addUser(self, user):
         """ Add a user to this group. """
-        if not user:
-            raise Exception('User must not be None.')
+        if not isinstance(user, User):
+            raise Exception('User must be an instance of User.')
         if user in self:
             return
         try:
@@ -678,6 +751,9 @@ class Group(object):
         # cache coherence
         self._users = None
         Group._by_user_id.pop(user.id, None)
+        # send notifications
+        for u in self.users:
+            u.pushNotification(GroupUserAddNotification(u, user, self))
     
     def __iadd__(self, user):
         self.addUser(user)
@@ -698,6 +774,9 @@ class Group(object):
         # cache coherence
         self._users = None
         Group._by_user_id.pop(user.id, None)
+        # send notifications
+        for u in self.users:
+            u.pushNotification(GroupUserDeleteNotification(u, user, self))
     
     def __isub__(self, user):
         self.deleteUser(user)
@@ -705,7 +784,7 @@ class Group(object):
     
     def delete(self):
         """ Delete this group. """
-        # need this later to uncache for these users
+        # need this later to uncache and notify
         users = self.users
         try:
             # Delete group from groups table
@@ -722,6 +801,9 @@ class Group(object):
         self._users = None
         for user in users:
             Group._by_user_id.pop(user.id, None)
+        # send notification
+        for u in users:
+            u.pushNotification(GroupDeleteNotification(u, self))
     
     def __iter__(self):
         """ Returns an iterator over the users in this group. """
