@@ -10,12 +10,50 @@ server_info = {
 
 base_path = ("%(server_url)s:%(port)s" % server_info)
 
-r = requests.get(base_path + '/group', data = """
+r = requests.post(base_path + '/passengers', data = """
     {
-        "group_name" : "%s"
+        "group_id" : 4,
+        "user_id" : 2
+    }
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+
+r = requests.post(base_path + '/passengers', data = """
+    {
+        "group_id" : 4,
+        "user_id" : 3
+    }
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+
+r = requests.post(base_path + '/passengers', data = """
+    {
+        "group_id" : 5,
+        "user_id" : 4
+    }
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+
+r = requests.get(base_path + '/notifications', data = """
+    {
         
     }
-    """ % ('g-unit',), headers = json_headers)
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+
+r = requests.get(base_path + '/notifications', data = """
+    {
+        
+    }
+    """, headers = json_headers)
 
 print r.status_code
 print r.text

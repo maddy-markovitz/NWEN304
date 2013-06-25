@@ -243,13 +243,13 @@ class User(object):
     def pollNotification(self):
         """ Return the next queued notification, or None. """
         try:
-            return _notifications.pop(0)
+            return self._notifications.pop(0)
         except IndexError:
             return None
     
     def pushNotification(self, notification):
         """ Enqueue a notification for this user. """
-        _notifications.append(notification)
+        self._notifications.append(notification)
     
     def __str__(self):
         return 'User[id=%d,name=%s]' % (self.id, self.name)
@@ -306,7 +306,7 @@ class GroupUserAddNotification(GroupUserNotification):
             message = 'You were added to group %s.' % group.name
         else:
             message = '%s was added to group %s.' % (user.name, group.name)
-        Notification.__init__(self, 'group_user_add', to, user, group, message)
+        GroupUserNotification.__init__(self, 'group_user_add', to, user, group, message)
 
 class GroupUserDeleteNotification(GroupUserNotification):
     def __init__(self, to, user, group):
@@ -314,7 +314,7 @@ class GroupUserDeleteNotification(GroupUserNotification):
             message = 'You were deleted from group %s.' % group.name
         else:
             message = '%s was deleted from group %s.' % (user.name, group.name)
-        Notification.__init__(self, 'group_user_delete', to, user, group, message)
+        GroupUserNotification.__init__(self, 'group_user_delete', to, user, group, message)
 
 class InviteNotification(GroupUserNotification):
     def __init__(self, to, user, group):
@@ -790,7 +790,7 @@ class Group(object):
         self._users = None
         for user in users:
             Group._by_user_id.pop(user.id, None)
-        # send notification
+        # send notifications
         for u in users:
             u.pushNotification(GroupDeleteNotification(u, self))
     
@@ -1159,7 +1159,7 @@ def getPassengers():
         raise
 
 # API method to add a passenger to a group
-@post('passengers')
+@post('/passengers')
 def addPassenger():
     s = getSession()
     
@@ -1186,7 +1186,7 @@ def addPassenger():
         raise
 
 # API method to delete a passenger from a group. Absent or less than 0 means 'delete me'.
-@delete('passengers')
+@delete('/passengers')
 def deletePassenger():
     s = getSession()
     
@@ -1217,15 +1217,17 @@ def deletePassenger():
         raise
 
 # API method to get user's notifications
-@get('notifications')
+@get('/notifications')
 def getNotifications():
     s = getSession()
-    
-    # TODO
-    
     try:
-        pass
-        
+        nl = []
+        n = s.user.pollNotification()
+        while n != None:
+            nl += [n.toDict()]
+            n = s.user.pollNotification()
+        res = { 'notifications' : nl }
+        return res
     except HTTPError:
         raise
     except:
