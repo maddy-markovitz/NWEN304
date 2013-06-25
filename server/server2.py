@@ -263,10 +263,10 @@ class User(object):
         return d
 
 class Notification(object):
-    def __init__(self, to, tag, message):
+    def __init__(self, tag, to, message):
         self.created = long(time.time())
-        self.to = to
         self.tag = tag
+        self.to = to
         self.message = message
     
     def toDict(self):
@@ -278,62 +278,51 @@ class Notification(object):
         d['message'] = self.message
         return d
 
-class GroupUserAddNotification(Notification):
+class GroupDeleteNotification(Notification):
+    def __init__(self, to, group):
+        Notification.__init__(self, 'group_delete', to, 'Group %s was deleted.' % group.name)
+        self.group = group
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['group_id'] = self.group.id
+        return d
+
+class GroupUserNotification(Notification):
+    def __init__(self, tag, to, user, group, message):
+        Notification.__init__(self, tag, to, message)
+        self.user = user
+        self.group = group
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['group_id'] = self.group.id
+        d['user_id'] = self.user.id
+        return d
+
+class GroupUserAddNotification(GroupUserNotification):
     def __init__(self, to, user, group):
         if to == user:
             message = 'You were added to group %s.' % group.name
         else:
             message = '%s was added to group %s.' % (user.name, group.name)
-        Notification.__init__(self, to, 'group_user_add', message)
-        self.user = user
-        self.group = group
-    
-    def toDict(self):
-        d = Notification.toDict(self)
-        d['user_id'] = self.user.id
-        d['group_id'] = self.group.id
-        return d
+        Notification.__init__(self, 'group_user_add', to, user, group, message)
 
-class GroupUserDeleteNotification(Notification):
+class GroupUserDeleteNotification(GroupUserNotification):
     def __init__(self, to, user, group):
         if to == user:
             message = 'You were deleted from group %s.' % group.name
         else:
             message = '%s was deleted from group %s.' % (user.name, group.name)
-        Notification.__init__(self, to, 'group_user_delete', message)
-        self.user = user
-        self.group = group
-    
-    def toDict(self):
-        d = Notification.toDict(self)
-        d['user_id'] = self.user.id
-        d['group_id'] = self.group.id
-        return d
+        Notification.__init__(self, 'group_user_delete', to, user, group, message)
 
-class GroupDeleteNotification(Notification):
-    def __init__(self, to, group):
-        Notification.__init__(self, to, 'group_delete', 'Group %s was deleted.' % group.name)
-        self.group = group
-    
-    def toDict(self):
-        d = Notification.toDict(self)
-        d['group_id'] = self.group.id
-
-class InviteNotification(Notification):
+class InviteNotification(GroupUserNotification):
     def __init__(self, to, user, group):
         # TODO
         pass
-    
-    def toDict(self):
-        # TODO
-        pass
 
-class RequestNotification(Notification):
+class RequestNotification(GroupUserNotification):
     def __init__(self, to, user, group):
-        # TODO
-        pass
-    
-    def toDict(self):
         # TODO
         pass
 
@@ -1224,6 +1213,23 @@ def deletePassenger():
         raise
     except:
         print Red + 'Error in deletePassenger():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to get user's notifications
+@get('notifications')
+def getNotifications():
+    s = getSession()
+    
+    # TODO
+    
+    try:
+        pass
+        
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in getNotifications():' + ColorOff
         traceback.print_exc()
         raise
 
