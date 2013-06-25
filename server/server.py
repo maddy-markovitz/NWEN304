@@ -25,6 +25,8 @@
 import json, sqlite3, sys, uuid, time, traceback, hashlib
 from os import urandom
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
+from Levenshtein import distance
+from Queue import PriorityQueue
 
 # Backdoor user. If no session id is supplied in a request and this is enabled,
 # a session for the user with id _BD_USER will be used.
@@ -355,6 +357,7 @@ def getPassengers():
         if not s.user_id in res:
             # uncomment for security
             # abort(401, 'Only members of a group can view its passengers.')
+            pass
         return res
     except HTTPError:
         raise
@@ -405,6 +408,90 @@ def deletePassenger():
         print('Bad delete passenger request.')
         traceback.print_exc()
         abort(400, 'Bad delete passenger request.')
+
+
+
+# API method to search for a group by phone number or group name
+@get('search')
+def search():
+    s = getSession()
+    
+    # TODO
+    # test this function
+    
+    try:
+        res = {}
+        phone_number = request.json['phone_number']
+        group_name = request.json['group_name']
+        
+        pq = PriorityQueue(0)
+        
+        
+        #get all the groups whos drivers phone number matches the query exactly
+        for row in _dbcon.execute("SELECT * FROM users WHERE phone_number  = ?", (phone_number,)):
+            user = row[user_id]
+            for row2 in _dbcon.execute("SELECT * FROM groups WHERE user_id  = ?", (user,)):
+                #create group object from row
+                group = {}
+                for g_field in _group_fields:
+                    group[g_field] = row[g_field]
+                    
+                #add group to priority queue with priority .1
+                pq.add(.1,group)
+        
+        
+        #get all the groups with a name resembles the query (2/3 of the characters match)
+        for row in _dbcon.execute("SELECT * FROM groups"):
+            #create group object from row
+            group = {}
+            for g_field in _group_fields:
+                group[g_field] = row[g_field]
+                
+            #add group to priority queue with edit distance / length as their priority
+            priority = distance(group['group_name'],group_name)
+            ps.add(priority,group)
+                
+            #add the groups where 2/3 of the charatcers match
+            count = 0
+            while True:
+                g = ps.get()
+                if g[0] <= .75:
+                    res[count] = g[1]
+                    count = count+1     
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad search request.')
+        traceback.print_exc()
+        abort(400, 'Bad search request.')
+
+# API method to invite a user to your group
+@get('invite')
+def search():
+    s = getSession()
+    
+    # TODO
+    # everything
+    
+    try:
+        res = {}
+        phone_number = request.json['phone_number']
+        group_name = request.json['group_name']
+        
+        #get the user with the given phone number
+        user_id = _dbcon.execute("SELECT * FROM users WHERE phone_number  = ?", (phone_number,))[user_id]
+        
+        #add invitation to user with user_id's notifications
+        
+         
+        return res
+    except HTTPError:
+        raise
+    except:
+        print('Bad invite request.')
+        traceback.print_exc()
+        abort(400, 'Bad invite request.')
 
 # 'Main method' : this needs to be at the bottom
 if __name__ == '__main__':
