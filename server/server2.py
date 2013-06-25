@@ -80,6 +80,12 @@ BPurple="\033[1;35m"
 BCyan="\033[1;36m"
 BWhite="\033[1;37m"
 
+#
+# ================================
+# Users
+# ================================
+#
+
 class NoSuchUserError(Exception):
     def __init__(self, user_id=None, phone=None, message=None):
         if user_id != None:
@@ -203,7 +209,7 @@ class User(object):
             User.forPhone(phone)
             raise UserSanityError(message='Phone not unique.')
         except NoSuchUserError:
-            # good, users doesn't exist
+            # good, user doesn't exist
             pass
         # generate a secure random salt and hash the password with it
         pwd_salt = hashlib.sha512(urandom(128)).hexdigest()
@@ -248,7 +254,7 @@ class User(object):
             return None
     
     def pushNotification(self, notification):
-        """ Enqueue a notification for this user. """
+        """ Enqueue a notification for this user. THIS IS CALLED AUTOMAGICALLY BY THE NOTIFICATION CONSTRUCTOR. """
         self._notifications.append(notification)
     
     def __str__(self):
@@ -262,21 +268,108 @@ class User(object):
         d['phone_number'] = self.phone
         return d
 
+#
+# ================================
+# Invites and Requests
+# ================================
+#
+
+class NoSuchGroupInviteError(Exception):
+    def __init__(self, invite_id):
+        Exception.__init__(self, 'No invite found with id=%s.' % str(invite_id))
+
+class GroupInvite(object):
+    """ An invitation to join a group. Do not call the constructor directly, use GroupInvite.create(). """
+    
+    # invitations by uuid
+    _by_id = {}
+    
+    @classmethod
+    def forID(cls, invite_id):
+        """ Get an invitation by id. May throw NoSuchGroupInviteError. """
+        try:
+            return cls._by_id[uuid.UUID(str(invite_id))]
+        except KeyError:
+            raise NoSuchGroupInviteError(invite_id)
+    
+    @classmethod
+    def create(cls, user, group):
+        """ Create an invite. """
+        ginv = GroupInvite(user, group)
+        cls._by_id[ginv.id] = ginv
+        return ginv
+    
+    def __init__(self, user, group):
+        self.id = uuid.uuid4()
+        self.user = user
+        self.group = group
+        # send notification
+        GroupInviteNotification(self)
+    
+    def accept(self):
+        """ Accept this invitation, i.e. add the user this invitation is for to the group it is for. """
+        self.group += self.user
+
+class NoSuchGroupRequestError(Exception):
+    def __init__(self, request_id):
+        Exception.__init__(self, 'No request found with id=%s.' % str(request_id))
+
+class GroupRequest(object):
+    """ A request to join a group. Do not call the constructor directly, use GroupRequest.create(). """
+    
+    # requests by id
+    _by_id = {}
+    
+    @classmethod
+    def forID(cls, request_id):
+        """ Get a request by id. May throw NoSuchGroupRequestError. """
+        try:
+            return cls._by_id[uuid.UUID(str(invite_id))]
+        except KeyError:
+            raise NoSuchGroupRequestError(request_id)
+    
+    @classmethod
+    def create(cls, user, group):
+        greq = GroupRequest(user, group)
+        cls._by_id[greq.id] = greq
+        return greq
+    
+    def __init__(self, user, group):
+        self.id = uuid.uuid4()
+        self.user = user
+        self.group = group
+        # send notification
+        GroupRequestNotification(self)
+    
+    def accept(self):
+        """ Accept this request, i.e. add the user this request is from to the group it is for. """
+        self.group += self.user
+
+#
+# ================================
+# Notifications
+# ================================
+#
+
 class Notification(object):
     def __init__(self, tag, to, message):
         self.created = long(time.time())
         self.tag = tag
         self.to = to
         self.message = message
+        self.to.pushNotification(self)
     
     def toDict(self):
         """ Create a dict representation for returning as JSON. """
         d = {}
         d['created'] = self.created
-        d['to_id'] = self.to.id
+        d['to'] = self.to.toDict()
         d['tag'] = self.tag
         d['message'] = self.message
         return d
+    
+    def __str__(self):
+        return self.message
 
 class GroupDeleteNotification(Notification):
     def __init__(self, to, group):
@@ -285,7 +378,7 @@ class GroupDeleteNotification(Notification):
     
     def toDict(self):
         d = Notification.toDict(self)
-        d['group_id'] = self.group.id
+        d['group'] = self.group.toDict()
         return d
 
 class GroupUserNotification(Notification):
@@ -296,8 +389,8 @@ class GroupUserNotification(Notification):
     
     def toDict(self):
         d = Notification.toDict(self)
-        d['group_id'] = self.group.id
-        d['user_id'] = self.user.id
+        d['group'] = self.group.toDict()
+        d['user'] = self.user.toDict()
         return d
 
 class GroupUserAddNotification(GroupUserNotification):
@@ -316,15 +409,33 @@ class GroupUserDeleteNotification(GroupUserNotification):
             message = '%s was deleted from group %s.' % (user.name, group.name)
         GroupUserNotification.__init__(self, 'group_user_delete', to, user, group, message)
 
-class InviteNotification(GroupUserNotification):
-    def __init__(self, to, user, group):
-        # TODO
-        pass
+class GroupInviteNotification(GroupUserNotification):
+    def __init__(self, ginv):
+        message = 'You have been invited to group %s by %s.' % (ginv.group.name, ginv.group.owner.name)
+        GroupUserNotification.__init__(self, 'group_user_invite', ginv.user, ginv.user, ginv.group, message)
+        self.ginv = ginv
+    
+    def toDict(self):
+        d = GroupUserNotification.toDict(self)
+        d['invite_id'] = self.ginv.id.hex
+        return d
 
-class RequestNotification(GroupUserNotification):
-    def __init__(self, to, user, group):
-        # TODO
-        pass
+class GroupRequestNotification(GroupUserNotification):
+    def __init__(self, greq):
+        message = '%s has requested to join your group %s.' % (greq.user.name, greq.group.name)
+        GroupUserNotification.__init__(self, 'group_user_request', greq.group.owner, greq.user, greq.group, message)
+        self.greq = greq
+    
+    def toDict(self):
+        d = GroupUserNotification.toDict(self)
+        d['request_id'] = self.greq.id.hex
+        return d
+
+#
+# ================================
+# Groups
+# ================================
+#
 
 class NoSuchGroupError(Exception):
     def __init__(self, group_id=None, group_name=None, message=None):
@@ -742,7 +853,7 @@ class Group(object):
         Group._by_user_id.pop(user.id, None)
         # send notifications
         for u in self.users:
-            u.pushNotification(GroupUserAddNotification(u, user, self))
+            GroupUserAddNotification(u, user, self)
     
     def __iadd__(self, user):
         self.addUser(user)
@@ -765,7 +876,7 @@ class Group(object):
         Group._by_user_id.pop(user.id, None)
         # send notifications
         for u in self.users:
-            u.pushNotification(GroupUserDeleteNotification(u, user, self))
+            GroupUserDeleteNotification(u, user, self)
     
     def __isub__(self, user):
         self.deleteUser(user)
@@ -792,7 +903,7 @@ class Group(object):
             Group._by_user_id.pop(user.id, None)
         # send notifications
         for u in users:
-            u.pushNotification(GroupDeleteNotification(u, self))
+            GroupDeleteNotification(u, self)
     
     def __iter__(self):
         """ Returns an iterator over the users in this group. """
@@ -815,6 +926,12 @@ class Group(object):
         d['days'] = self.days
         return d
 
+#
+# ================================
+# Sessions
+# ================================
+#
+
 class NoSuchSessionError(Exception):
     def __init__(self, session_id):
         self.message = 'No session found with session_id=%s.' % session_id
@@ -833,7 +950,7 @@ class Session(object):
     def forID(cls, session_id):
         """ Get a session by session_id. """
         try:
-            return cls._by_id[uuid.UUID(session_id)]
+            return cls._by_id[uuid.UUID(str(session_id))]
         except KeyError:
             raise NoSuchSessionError(session_id)
     
@@ -899,6 +1016,12 @@ def getSession():
         print 'Invalid session id.'
         traceback.print_exc()
         abort(401, 'Invalid session id.')
+
+#
+# ================================
+# Web API
+# ================================
+#
 
 # API method to register a new user
 @post('/register')
