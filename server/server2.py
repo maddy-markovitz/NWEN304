@@ -37,8 +37,8 @@
 #
 #
 
-import json, sqlite3, sys, uuid, time, traceback, hashlib, re
-from os import urandom
+import json, sqlite3, sys, os, uuid, time, traceback, hashlib, re
+from Queue import PriorityQueue
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
 
 # Backdoor user. If no session id is supplied in a request and this is enabled,
@@ -89,9 +89,9 @@ BWhite="\033[1;37m"
 class NoSuchUserError(Exception):
     def __init__(self, user_id=None, phone=None, message=None):
         if user_id != None:
-            Exception.__init__(self, 'No user found with id=%d.' % int(user_id))
+            Exception.__init__(self, 'No user found with id=%s.' % str(user_id))
         elif phone != None:
-            Exception.__init__(self, 'No user found with phone_number=%d.' % int(phone))
+            Exception.__init__(self, 'No user found with phone_number=%s.' % str(phone))
         elif message != None:
             Exception.__init__(self, message)
         else:
@@ -176,7 +176,7 @@ class User(object):
             user_id = int(user_id)
             return cls._by_id[user_id]
         except ValueError:
-            raise NoSuchUserError()
+            raise NoSuchUserError(user_id=user_id)
         except KeyError:
             # this may throw NoSuchUserError
             user = User(user_id=user_id)
@@ -191,7 +191,7 @@ class User(object):
             phone = long(phone)
             return cls._by_phone[phone]
         except ValueError:
-            return None
+            raise NoSuchUserError(phone=phone)
         except KeyError:
             # this may throw NoSuchUserError
             user = User(phone=phone)
@@ -212,7 +212,7 @@ class User(object):
             # good, user doesn't exist
             pass
         # generate a secure random salt and hash the password with it
-        pwd_salt = hashlib.sha512(urandom(128)).hexdigest()
+        pwd_salt = hashlib.sha512(os.urandom(128)).hexdigest()
         pwd_hash = hashlib.sha512(pwd_salt + password).hexdigest()
         # create user
         try:
@@ -508,9 +508,9 @@ class GroupRequestWithdrawNotification(GroupUserNotification):
 class NoSuchGroupError(Exception):
     def __init__(self, group_id=None, group_name=None, message=None):
         if group_id != None:
-            Exception.__init__(self, 'No group found with id=%d.' % int(group_id))
+            Exception.__init__(self, 'No group found with id=%s.' % str(group_id))
         elif group_name != None:
-            Exception.__init__(self, 'No group found with name=%s.' % group_name)
+            Exception.__init__(self, 'No group found with name=%s.' % str(group_name))
         elif message != None:
             Exception.__init__(self, message)
         else:
@@ -639,6 +639,58 @@ class Group(object):
             raise GroupSanityError(field='days')
     
     @classmethod
+    def _levenshtein(cls, a, b):
+        """ Calculates the Levenshtein distance between a and b.
+        From: http://hetland.org/coding/python/levenshtein.py """
+        n, m = len(a), len(b)
+        if n > m:
+            # Make sure n <= m, to use O(min(n,m)) space
+            a,b = b,a
+            n,m = m,n
+        current = range(n+1)
+        for i in range(1,m+1):
+            previous, current = current, [i]+[0]*n
+            for j in range(1,n+1):
+                add, delete = previous[j]+1, current[j-1]+1
+                change = previous[j-1]
+                if a[j-1] != b[i-1]:
+                    change = change + 1
+                current[j] = min(add, delete, change)
+        return current[n]
+    
+    @classmethod
+    def search(cls, query, results=10):
+        """ Search for groups, by group name, owner phone or owner name.
+        Returns a list in order from best match to worst. """
+        query = unicode(query)
+        # skip empty search
+        if len(query) < 1:
+            return []
+        # rank groups that match, return best n
+        pq = PriorityQueue()
+        # get all groups where group name resembles query
+        # priority: (edit distance / length)
+        for row in _dbcon.execute('SELECT group_name FROM groups'):
+            group_name = row[0]
+            edist = cls._levenshtein(query, group_name)
+            # TODO tune this thing
+            if edist < len(group_name):
+                pq.put((edist / len(query), Group.forName(group_name)))
+        # get all groups where owner phone number matches exactly
+        # priority: 0.01
+        try:
+            for g in Group.forOwner(User.forPhone(query)):
+                pq.put((0.02337, g))
+        except NoSuchUserError:
+            # no user with that phone
+            pass
+        # dequeue best n
+        res = []
+        while len(res) < results and not pq.empty():
+            res += [pq.get()[1]]
+        return res
+    
+    @classmethod
     def forAny(cls, group_id=None, group_name=None):
         """ Gets a group by id or name. """
         if group_id != None:
@@ -653,7 +705,7 @@ class Group(object):
             group_id = int(group_id)
             return cls._by_id[group_id]
         except ValueError:
-            return None
+            raise NoSuchGroupError(group_id=group_id)
         except KeyError:
             # this may throw NoSuchGroupError
             group = Group(group_id=group_id)
@@ -668,7 +720,7 @@ class Group(object):
             group_name = unicode(group_name)
             return cls._by_name[group_name]
         except ValueError:
-            return None
+            raise NoSuchGroupError(group_name=group_name)
         except KeyError:
             # this may throw NoSuchGroupError
             group = Group(group_name=group_name)
@@ -1642,6 +1694,27 @@ def declineGroupRequest():
         raise
     except:
         print Red + 'Error in declineGroupRequest():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to search for groups. WARNING: this isn't google - lower your expectations.
+@get('/search')
+def searchGroups():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        query = request.json['search_query']
+        groups = Group.search(query)
+        return { 'groups' : [g.toDict() for g in groups] }
+        
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in searchGroups():' + ColorOff
         traceback.print_exc()
         raise
 
