@@ -308,7 +308,29 @@ class GroupInvite(object):
     
     def accept(self):
         """ Accept this invitation, i.e. add the user this invitation is for to the group it is for. """
+        # notification is sent by group
         self.group += self.user
+        GroupInvite._by_id.pop(self.id, None)
+    
+    def decline(self):
+        """ Decline this invitation. """
+        # send notification
+        GroupInviteDeclineNotification(self)
+        GroupInvite._by_id.pop(self.id, None)
+    
+    def withdraw(self):
+        """ Withdraw this invitation. """
+        # send notification
+        GroupInviteWithdrawNotification(self)
+        GroupInvite._by_id.pop(self.id, None)
+    
+    def toDict():
+        """ Create a dict representation for returning as JSON. """
+        d = {}
+        d['invite_id'] = self.id.hex
+        d['user'] = self.user.toDict()
+        d['group'] = self.group.toDict()
+        return d
 
 class NoSuchGroupRequestError(Exception):
     def __init__(self, request_id):
@@ -324,12 +346,13 @@ class GroupRequest(object):
     def forID(cls, request_id):
         """ Get a request by id. May throw NoSuchGroupRequestError. """
         try:
-            return cls._by_id[uuid.UUID(str(invite_id))]
+            return cls._by_id[uuid.UUID(str(request_id))]
         except KeyError:
             raise NoSuchGroupRequestError(request_id)
     
     @classmethod
     def create(cls, user, group):
+        """ Create a request. """
         greq = GroupRequest(user, group)
         cls._by_id[greq.id] = greq
         return greq
@@ -343,7 +366,28 @@ class GroupRequest(object):
     
     def accept(self):
         """ Accept this request, i.e. add the user this request is from to the group it is for. """
+        # notification is sent by group
         self.group += self.user
+        GroupRequest._by_id.pop(self.id, None)
+    
+    def decline(self):
+        """ Decline this request. """
+        # send notification
+        GroupRequestDeclineNotification(self)
+        GroupRequest._by_id.pop(self.id, None)
+    
+    def withdraw(self):
+        """ Withdraw this request. """
+        # send notification
+        GroupRequestWithdrawNotification(self)
+        GroupRequest._by_id.pop(self.id, None)
+    
+    def toDict():
+        """ Create a dict representation for returning as JSON. """
+        d = {}
+        d['request_id'] = self.id.hex
+        d['user'] = self.user.toDict()
+        d['group'] = self.group.toDict()
 
 #
 # ================================
@@ -411,8 +455,8 @@ class GroupUserDeleteNotification(GroupUserNotification):
 
 class GroupInviteNotification(GroupUserNotification):
     def __init__(self, ginv):
-        message = 'You have been invited to group %s by %s.' % (ginv.group.name, ginv.group.owner.name)
-        GroupUserNotification.__init__(self, 'group_user_invite', ginv.user, ginv.user, ginv.group, message)
+        message = '%s has invited you to group %s.' % (ginv.group.owner.name, ginv.group.name)
+        GroupUserNotification.__init__(self, 'group_invite', ginv.user, ginv.user, ginv.group, message)
         self.ginv = ginv
     
     def toDict(self):
@@ -422,14 +466,38 @@ class GroupInviteNotification(GroupUserNotification):
 
 class GroupRequestNotification(GroupUserNotification):
     def __init__(self, greq):
-        message = '%s has requested to join your group %s.' % (greq.user.name, greq.group.name)
-        GroupUserNotification.__init__(self, 'group_user_request', greq.group.owner, greq.user, greq.group, message)
+        message = '%s has requested to join group %s.' % (greq.user.name, greq.group.name)
+        GroupUserNotification.__init__(self, 'group_request', greq.group.owner, greq.user, greq.group, message)
         self.greq = greq
     
     def toDict(self):
         d = GroupUserNotification.toDict(self)
         d['request_id'] = self.greq.id.hex
         return d
+
+class GroupInviteDeclineNotification(GroupUserNotification):
+    def __init__(self, ginv):
+        message = '%s has declined your invitation to group %s.' % (ginv.user.name, ginv.group.name)
+        GroupUserNotification.__init__(self, 'group_invite_decline', ginv.group.owner, ginv.user, ginv.group, message)
+        self.ginv = ginv
+
+class GroupRequestDeclineNotification(GroupUserNotification):
+    def __init__(self, greq):
+        message = '%s has declined your request to join group %s.' % (greq.group.owner.name, greq.group.name)
+        GroupUserNotification.__init__(self, 'group_request_decline', greq.user, greq.user, greq.group, message)
+        self.greq = greq
+
+class GroupInviteWithdrawNotification(GroupUserNotification):
+    def __init__(self, ginv):
+        message = '%s has withdrawn their invitation to group %s.' % (ginv.group.owner.name, ginv.group.name)
+        GroupUserNotification.__init__(self, 'group_invite_withdraw', ginv.user, ginv.user, ginv.group, message)
+        self.ginv = ginv
+
+class GroupRequestWithdrawNotification(GroupUserNotification):
+    def __init__(self, greq):
+        message = '%s has withdrawn their request to join group %s.' % (greq.user.name, greq.group.name)
+        GroupUserNotification.__init__(self, 'group_request_withdraw', greq.group.owner, greq.user, greq.group, message)
+        self.greq = greq
 
 #
 # ================================
@@ -1346,15 +1414,234 @@ def getNotifications():
     try:
         nl = []
         n = s.user.pollNotification()
+        # get notifications until none left
         while n != None:
             nl += [n.toDict()]
             n = s.user.pollNotification()
+        # return as a json array
         res = { 'notifications' : nl }
         return res
+        
     except HTTPError:
         raise
     except:
         print Red + 'Error in getNotifications():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to invite a user to a group
+@post('/groupinvite')
+def createGroupInvite():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        user = User.forID(request.json['user_id'])
+        group = Group.forID(request.json['group_id'])
+        # can only create an invite if you own the group
+        if s.user != group.owner:
+            abort(403, 'Only the group owner can invite users.')
+        # can only invite someone who isn't in the group
+        if user in group:
+            abort(400, 'Can only invite users who are not in the group.')
+        # create invite
+        ginv = GroupInvite.create(user, group)
+        return ginv.toDict()
+        
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in createGroupInvite():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to request to join a group
+@post('/grouprequest')
+def createGroupRequest():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        group = Group.forID(request.json['group_id'])
+        # can only request if you aren't in the group
+        if s.user in group:
+            abort(400, 'Can only request to join a group you are not in.')
+        # create request
+        greq = GroupRequest.create(s.user, group)
+        return greq.toDict()
+        
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in createGroupRequest():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to withdraw an invite
+@delete('/groupinvite')
+def deleteGroupInvite():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        ginv = GroupInvite.forID(request.json['invite_id'])
+        # can only withdraw if you issued the invite
+        if s.user != ginv.group.owner:
+            abort(403, 'Only the group owner can withdraw an invite.')
+        # withdraw
+        ginv.withdraw()
+        return {}
+        
+    except NoSuchGroupInviteError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in deleteGroupInvite():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to withdraw a request
+@delete('/grouprequest')
+def deleteGroupRequest():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        greq = GroupRequest.forID(request.json['request_id'])
+        # can only withdraw if you issued the request
+        if s.user != greq.user:
+            abort(403, 'Only the requesting user can withdraw a request.')
+        # withdraw
+        greq.withdraw()
+        return {}
+        
+    except NoSuchGroupRequestError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in deleteGroupRequest():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to accept an invitation to a group
+@post('/acceptgroupinvite')
+def acceptGroupInvite():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        ginv = GroupInvite.forID(request.json['invite_id'])
+        # can only accept if invite was issued to you
+        if s.user != ginv.user:
+            abort(403, 'Only the invited user can accept an invite.')
+        # accept
+        ginv.accept()
+        return {}
+        
+    except NoSuchGroupInviteError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in acceptGroupInvite():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to accept a request to join a group
+@post('/acceptgrouprequest')
+def acceptGroupRequest():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        greq = GroupRequest.forID(request.json['request_id'])
+        # can only accept request if owner
+        if s.user != greq.group.owner:
+            abort(403, 'Only the group owner can accept a request.')
+        # accept
+        greq.accept()
+        return {}
+        
+    except NoSuchGroupRequestError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in acceptGroupRequest():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to decline an invitation to a group
+@post('/declinegroupinvite')
+def declineGroupInvite():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        ginv = GroupInvite.forID(request.json['invite_id'])
+        # can only decline if invite was issued to you
+        if s.user != ginv.user:
+            abort(403, 'Only the invited user can decline an invite.')
+        # decline
+        ginv.decline()
+        return {}
+        
+    except NoSuchGroupInviteError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in declineGroupInvite():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to decline a request to join a group
+@post('/declinegrouprequest')
+def declineGroupRequest():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        greq = GroupRequest.forID(request.json['request_id'])
+        # can only decline request if owner
+        if s.user != greq.group.owner:
+            abort(403, 'Only the group owner can decline a request.')
+        # decline
+        greq.decline()
+        return {}
+        
+    except NoSuchGroupRequestError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in declineGroupRequest():' + ColorOff
         traceback.print_exc()
         raise
 
