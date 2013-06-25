@@ -132,8 +132,8 @@ class User(object):
             name = unicode(name)
             if len(name) < 3:
                 raise UserSanityError(message='User name must be at least 3 characters.')
-            if not re.match(r'^\w*$', name):
-                raise UserSanityError(message='User name must consist on only a-z, A-Z, 0-9 and _.')
+            if not re.match(r'^[a-zA-Z0-9 -_+=.]*$', name):
+                raise UserSanityError(message='User name must consist on only [a-zA-Z0-9 -_+=.].')
             return name
         except UserSanityError:
             raise
@@ -367,8 +367,8 @@ class Group(object):
             name = unicode(name)
             if len(name) < 3:
                 raise GroupSanityError(message='Group name must be at least 3 characters.')
-            if not re.match(r'^\w*$', name):
-                raise GroupSanityError(message='Group name must consist on only a-z, A-Z, 0-9 and _.')
+            if not re.match(r'^[a-zA-Z0-9 -_+=.]*$', name):
+                raise GroupSanityError(message='Group name must consist on only [a-zA-Z0-9 -_+=.].')
             return name
         except GroupSanityError:
             raise
