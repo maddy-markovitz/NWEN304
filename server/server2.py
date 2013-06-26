@@ -499,6 +499,20 @@ class GroupRequestWithdrawNotification(GroupUserNotification):
         GroupUserNotification.__init__(self, 'group_request_withdraw', greq.group.owner, greq.user, greq.group, message)
         self.greq = greq
 
+class GroupGPSNotification(Notification):
+    def __init__(self, to, group, latitude, longitude):
+        Notification.__init__(self, 'group_gps', to, '-- group gps update --')
+        self.group = group
+        self.latitude = latitude
+        self.longitude = longitude
+    
+    def toDict(self):
+        d = Notification.toDict(self)
+        d['group'] = self.group.toDict()
+        d['latitude'] = self.latitude
+        d['longitude'] = self.longitude
+        return d
+
 #
 # ================================
 # Groups
@@ -1501,6 +1515,8 @@ def createGroupInvite():
         ginv = GroupInvite.create(user, group)
         return ginv.toDict()
         
+    except (NoSuchUserError, NoSuchGroupError) as e:
+        abort(400, e.message)
     except KeyError:
         abort(400, 'Missing parameter')
     except HTTPError:
@@ -1526,6 +1542,8 @@ def createGroupRequest():
         greq = GroupRequest.create(s.user, group)
         return greq.toDict()
         
+    except NoSuchGroupError as e:
+        abort(400, e.message)
     except KeyError:
         abort(400, 'Missing parameter')
     except HTTPError:
@@ -1715,6 +1733,38 @@ def searchGroups():
         raise
     except:
         print Red + 'Error in searchGroups():' + ColorOff
+        traceback.print_exc()
+        raise
+
+# API method to update the location of a group's driver
+@put('/gps')
+def updateGroupGPS():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        group = Group.forID(request.json['group_id'])
+        latitude = float(request.json['latitude'])
+        longitude = float(request.json['longitude'])
+        # can only update location if group owner
+        if s.user != group.owner:
+            abort(403, 'Only the group owner (==driver) can update group location.')
+        # send notification to each user in the group
+        for user in group:
+            GroupGPSNotification(user, group, latitude, longitude)
+        return {}
+        
+    except ValueError as e:
+        abort(400, e.message)
+    except NoSuchGroupError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in updateGroupGPS():' + ColorOff
         traceback.print_exc()
         raise
 

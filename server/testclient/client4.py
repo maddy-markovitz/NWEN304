@@ -40,6 +40,17 @@ r = requests.post(base_path + '/passengers', data = """
 print r.status_code
 print r.text
 
+r = requests.put(base_path + '/gps', data = """
+    {
+        "group_id" : 4,
+        "latitude" : 27.3,
+        "longitude" : 180.222
+    }
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+
 r = requests.get(base_path + '/notifications', data = """
     {
         
