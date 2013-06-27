@@ -1856,6 +1856,7 @@ def getGroupGPS():
 # hackfix method
 @post('/doeverything')
 def doEverything():
+    print Cyan + '--- /doeverything : begin' + ColorOff
     methodname = str(request.json['__method__'])
     method = _methods[methodname]
     print Cyan + '--- /doeverything : %s' % methodname + ColorOff
