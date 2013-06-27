@@ -324,7 +324,7 @@ class GroupInvite(object):
         GroupInviteWithdrawNotification(self)
         GroupInvite._by_id.pop(self.id, None)
     
-    def toDict():
+    def toDict(self):
         """ Create a dict representation for returning as JSON. """
         d = {}
         d['invite_id'] = self.id.hex
@@ -382,7 +382,7 @@ class GroupRequest(object):
         GroupRequestWithdrawNotification(self)
         GroupRequest._by_id.pop(self.id, None)
     
-    def toDict():
+    def toDict(self):
         """ Create a dict representation for returning as JSON. """
         d = {}
         d['request_id'] = self.id.hex

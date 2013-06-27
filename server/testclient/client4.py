@@ -20,14 +20,14 @@ r = requests.post(base_path + '/login', data = """
 
 print r.status_code
 print r.text
-session_id = json.loads(r.text)['session_id']
+s1 = json.loads(r.text)['session_id']
 
 # logout
 r = requests.post(base_path + '/logout', data = """
     {
         "session_id" : "%s"
     }
-    """ % session_id, headers = json_headers)
+    """ % s1, headers = json_headers)
 
 print r.status_code
 print r.text
@@ -42,9 +42,10 @@ r = requests.post(base_path + '/login', data = """
 
 print r.status_code
 print r.text
-session_id = json.loads(r.text)['session_id']
+s1 = json.loads(r.text)['session_id']
 
 # login yet again
+print '1 logs in'
 r = requests.post(base_path + '/login', data = """
     {
         "phone_number" : 1,
@@ -54,41 +55,93 @@ r = requests.post(base_path + '/login', data = """
 
 print r.status_code
 print r.text
-session_id = json.loads(r.text)['session_id']
+s1 = json.loads(r.text)['session_id']
 
-r = requests.post(base_path + '/passengers', data = """
+# login another user
+print '2 logs in'
+r = requests.post(base_path + '/login', data = """
+    {
+        "phone_number" : 2,
+        "password" : "seecret"
+    }
+    """, headers = json_headers)
+
+print r.status_code
+print r.text
+s2 = json.loads(r.text)['session_id']
+
+
+# now do some shit
+
+
+print '1 invites 2'
+r = requests.post(base_path + '/groupinvite', data = """
     {
         "session_id" : "%s",
         "group_id" : 4,
         "user_id" : 2
     }
-    """ % session_id, headers = json_headers)
+    """ % s1, headers = json_headers)
 
 print r.status_code
 print r.text
+ginv = json.loads(r.text)['invite_id']
 
-r = requests.post(base_path + '/passengers', data = """
+print '2 requests g4'
+r = requests.post(base_path + '/grouprequest', data = """
     {
         "session_id" : "%s",
         "group_id" : 4,
-        "user_id" : 3
     }
-    """ % session_id, headers = json_headers)
+    """ % s2, headers = json_headers)
 
 print r.status_code
 print r.text
 
-r = requests.post(base_path + '/passengers', data = """
+print '1 checks notifications'
+r = requests.get(base_path + '/notifications', data = """
+    {
+        "session_id" : "%s"
+    }
+    """ % s1, headers = json_headers)
+
+print r.status_code
+print r.text
+greq = json.loads(r.text)['notifications'][0]['request_id']
+
+print '2 checks notifications'
+r = requests.get(base_path + '/notifications', data = """
+    {
+        "session_id" : "%s"
+    }
+    """ % s2, headers = json_headers)
+
+print r.status_code
+print r.text
+
+print '1 accepts request'
+r = requests.post(base_path + '/acceptgrouprequest', data = """
     {
         "session_id" : "%s",
-        "group_id" : 5,
-        "user_id" : 4
+        "request_id" : "%s"
     }
-    """ % session_id, headers = json_headers)
+    """ % (s1, greq), headers = json_headers)
 
 print r.status_code
 print r.text
 
+print '1 withdraws invite'
+r = requests.post(base_path + '/acceptgrouprequest', data = """
+    {
+        "session_id" : "%s",
+        "request_id" : "%s"
+    }
+    """ % (s1, ginv), headers = json_headers)
+
+print r.status_code
+print r.text
+
+print '1 updates g4 gps'
 r = requests.put(base_path + '/gps', data = """
     {
         "session_id" : "%s",
@@ -101,20 +154,49 @@ r = requests.put(base_path + '/gps', data = """
 print r.status_code
 print r.text
 
+print '1 checks notifications'
 r = requests.get(base_path + '/notifications', data = """
     {
         "session_id" : "%s"
     }
-    """ % session_id, headers = json_headers)
+    """ % s1, headers = json_headers)
 
 print r.status_code
 print r.text
 
+print '2 checks notifications'
 r = requests.get(base_path + '/notifications', data = """
     {
         "session_id" : "%s"
     }
-    """ % session_id, headers = json_headers)
+    """ % s2, headers = json_headers)
 
 print r.status_code
 print r.text
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
