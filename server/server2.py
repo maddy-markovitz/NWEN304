@@ -1228,7 +1228,7 @@ def login():
         # re-init session
         s = Session.create(user)
         
-        print Green + 'register(): phone=%s, name=%s, password=%s, session_id=%s' % (str(phone), str(user.name), str(password), str(s.id.hex)) + ColorOff
+        print Green + 'login(): phone=%s, name=%s, password=%s, session_id=%s' % (str(phone), str(user.name), str(password), str(s.id.hex)) + ColorOff
         
         # return session 'cookie'
         return s.toDict()
