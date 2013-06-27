@@ -1159,8 +1159,10 @@ class Session(object):
 
 def getSession():
     """ Get the session object for the current request, or abort HTTP 401. """
+    session_id = None
     try:
-        s = Session.forID(request.json['session_id'])
+        session_id = request.json['session_id']
+        s = Session.forID(session_id)
         # sessions don't autorenew atm because client has to be able to deal with it anyway.
         if s.expired:
             abort(401, 'Session expired.')
