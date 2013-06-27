@@ -1204,8 +1204,10 @@ def register():
         return s.toDict()
         
     except UserSanityError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
