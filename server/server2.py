@@ -1801,7 +1801,7 @@ def getGroupGPS():
 # hackfix method
 @post('/doeverything')
 def doEverything():
-    methodname = request.json['__method__']
+    methodname = str(request.json['__method__'])
     method = _methods[methodname]
     return method()
 
