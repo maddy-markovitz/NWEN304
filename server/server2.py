@@ -1067,18 +1067,23 @@ class Group(object):
 #
 
 class NoSuchSessionError(Exception):
-    def __init__(self, session_id):
-        self.message = 'No session found with session_id=%s.' % session_id
+    def __init__(self, session_id=None, user_id=None):
+        if session_id != None:
+            Exception.__init__(self, 'No session found with session_id=%s.' % str(session_id))
+        elif user_id != None:
+            Exception.__init__(self, 'No session found for user_id=%s.' % str(user_id))
+        else:
+            Exception.__init__(self, 'No parameters supplied.')
 
 class Session(object):
-    """ A user session. Do not call constructor directly, use Session.forUser(). """
+    """ A user session. Do not call constructor directly, use Session.create(). """
     
     # seconds each session lasts for
     _ttl = 3600
     # dict of session ids to sessions
     _by_id = {}
     # dict of users to sessions
-    _by_user = {}
+    _by_user_id = {}
     
     @classmethod
     def forID(cls, session_id):
@@ -1086,15 +1091,25 @@ class Session(object):
         try:
             return cls._by_id[uuid.UUID(str(session_id))]
         except KeyError:
-            raise NoSuchSessionError(session_id)
+            raise NoSuchSessionError(session_id=session_id)
     
     @classmethod
     def forUser(cls, user):
-        """ Get a session for a user. CREATES THE SESSION IF IT DOESN'T EXIST! """
+        """ Get a session for a user. """
         try:
-            return cls._by_user[user]
+            return cls._by_user_id[user.id]
         except KeyError:
-            return Session(user)
+            raise NoSuchSessionError(user_id=user.id)
+    
+    @classmethod
+    def create(cls, user):
+        """ Create a new session for a user, deletes any old one. """
+        try:
+            Session.forUser(user).delete()
+        except NoSuchSessionError:
+            # ok, no session for this user
+            pass
+        return Session(user)
     
     def __init__(self, user):
         if not user:
@@ -1105,7 +1120,7 @@ class Session(object):
         self.expires = self.created + Session._ttl
         # add to dicts
         Session._by_id[self.id] = self
-        Session._by_user[self.user] = self
+        Session._by_user_id[self.user.id] = self
     
     @property
     def ttl(self):
@@ -1116,6 +1131,11 @@ class Session(object):
     def expired(self):
         """ Return True iff this session has expired. """
         return long(time.time()) >= self.expires
+    
+    def delete(self):
+        """ Delete this session. """
+        Session._by_id.pop(self.id, None)
+        Session._by_user_id.pop(self.user.id, None)
     
     def expire(self):
         """ Expire this session. """
@@ -1167,7 +1187,8 @@ def register():
         
         # this handles the uniqueness check
         user = User.create(phone, name, password)
-        s = Session.forUser(user)
+        # create new session
+        s = Session.create(user)
         
         # return session 'cookie'
         return s.toDict()
@@ -1191,22 +1212,18 @@ def login():
         password = request.json['password']
         
         # authenticate
-        try:
-            user = User.forPhone(phone)
-            if not user.authenticate(password):
-                print 'Invalid login : %s' % user
-                abort(401, 'Invalid user or password.')
-        except NoSuchUserError:
+        user = User.forPhone(phone)
+        if not user.authenticate(password):
+            print 'Invalid login : %s' % user
             abort(401, 'Invalid user or password.')
-        
-        # init session
-        s = Session.forUser(user)
-        # renew session (if previously logged in)
-        s.renew()
+        # re-init session
+        s = Session.create(user)
         
         # return session 'cookie'
         return s.toDict()
         
+    except NoSuchUserError:
+        abort(401, 'Invalid user or password.')
     except KeyError:
         abort(400, 'Missing parameter')
     except HTTPError:
@@ -1220,7 +1237,7 @@ def login():
 def logout():
     s = getSession()
     try:
-        s.expire()
+        s.delete()
         # return something useful?
         return {}
     except HTTPError:
@@ -1503,7 +1520,9 @@ def createGroupInvite():
     # TODO test this
     
     try:
-        user = User.forID(request.json['user_id'])
+        user_id = request.json.get('user_id')
+        phone = request.json.get('phone_number')
+        user = User.forAny(user_id=user_id, phone=phone)
         group = Group.forID(request.json['group_id'])
         # can only create an invite if you own the group
         if s.user != group.owner:
@@ -1815,7 +1834,7 @@ if __name__ == '__main__':
         _host = sys.argv[2]
     
     if _BD_USER_ID >= 0:
-        _BD_SESSION = Session(User.forID(_BD_USER_ID))
+        _BD_SESSION = Session.create(User.forID(_BD_USER_ID))
         print ''
         print Red + '\t\t**** BACKDOOR OPEN ****' + ColorOff
         print Red + '\tBackdoor: %s' % _BD_SESSION + ColorOff
