@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	autoDrawBackground="false" alpha="0.1" label="label">
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.transitions.ViewTransitionDirection;
+
+		
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+			
+			
+			
+			
+			
+			protected var transition:SlideViewTransition = new SlideViewTransition();
+			
+			import views.mapView;
+			
+			protected function handleMouseDown(event:MouseEvent):void
+			{
+				
+				
+				transition.direction = ViewTransitionDirection.LEFT;
+				transition.duration = 100;
+				<!--navigator.pushView(mapView, null, null, transition);-->
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<!--<s:HGroup height="40" top="10" verticalAlign="middle" width="300" left="10">-->
+		
+		<s:Label text="{this.data.group_name} - {this.data.user_id}" width="210" top="10" left="10"/>
+		<s:Label text="{this.data.origin}" top="30" left="10"/>
+	
+		<s:Label text="{this.data.destination}" top="50" bottom="10" left="10"/>
+	<s:Label text="Arrival: {this.data.arrival_time}, Departure: {this.data.departure_time}" top="70" left="10"/>
+	<s:Label text="Days: {this.data.days}, Seats: {this.data.seats}" top="90" bottom="10" left="10"/>
+	<!--<s:Button mouseDown="handleMouseDown(event)" icon="assets/gps.png" right="10" height="40" width="40" top="10" skinClass="assets.ButtonSkinTrans"/>
+		<s:Button mouseDown="handleMouseDown(event)" icon="assets/bin.png" right="10" top="45" height="40" width="40" skinClass="assets.ButtonSkinTrans"/>
+		<s:Button mouseDown="handleMouseDown(event)" icon="assets/3.png" right="10" top="80" height="40" width="40" skinClass="assets.ButtonSkinTrans"/>
+	
+		
+	</s:HGroup>-->
+		
+	
+	
+</s:ItemRenderer>

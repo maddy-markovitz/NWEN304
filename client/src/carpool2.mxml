@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark"
+							creationComplete="viewnavigatorapplication1_creationCompleteHandler(event)" 
+							applicationDPI="160">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here skinClass="skins.carpoolSkinBG" -->
+
+		
+	</fx:Declarations>
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		s|ViewMenu {
+			skinClass: ClassReference("skins.MyViewMenuSkin");
+		} 
+		s|ViewMenuItem {
+			skinClass: ClassReference("skins.MyVMItemSkin");
+			chromeColor: #000000;
+		} 
+			
+			
+			
+			@font-face { 
+				src: url("assets/LicensePlate.ttf"); 
+				fontFamily: "License"; 
+				embedAsCFF: true;
+				
+			}
+			
+			#license
+			{
+				fontFamily: "License";
+			}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import skins.carpoolSkinBG;
+			
+			import views.driverHomeView;
+			import views.passengerHomeView;
+			import views.sfdcempHomeView;
+			public var dispatcher:EventDispatcher;
+
+			
+			protected function viewnavigatorapplication1_creationCompleteHandler(event:FlexEvent):void
+			{			
+				dispatcher = new EventDispatcher;
+				//navigator.pushView(views.sfdcempHomeView);
+				navigator.pushView(views.notificationsView);
+				//navigator.pushView(views.SampleViewMenuHomeView);
+
+
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+</s:ViewNavigatorApplication>

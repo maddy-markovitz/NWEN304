@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" backgroundAlpha="0"
+		xmlns:s="library://ns.adobe.com/flex/spark" title="HomeView" actionBarVisible = "false" creationComplete="setup();">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+	<fx:Script>
+		<![CDATA[
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.spark.StackedFormItemSkin;
+			
+			import skins.ButtonSkinTrans;
+
+			private var phoneNumber:String = "1";
+			private var userPassword:String = "seecret";
+			import mx.events.TouchInteractionEvent;
+			
+			
+			
+			import mx.collections.ArrayCollection;
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			//import assets.carpoolItemRenderer;
+			
+			// The current message we are showing on the screen in the TextArea
+			[Bindable] protected var output:String = "";
+			
+			// Creation Complete
+			public function setup():void
+			{
+				// Attempt to get repsonse from server.
+				try
+				{
+					Wrapper.login(loaderCompleteHandler, phoneNumber, userPassword);
+					Wrapper.print("Loading Tring Data...");
+				}
+				catch (error:Error)
+				{
+					Wrapper.print("Unable to load URL");
+				}
+			}
+		
+		
+								
+			// Activates when we get a response from the request.
+			public function loaderCompleteHandler(e:Event):void
+			{
+				try 
+				{
+					Wrapper.print(e.target.data);
+					var res:Object = JSON.parse(e.target.data);
+				}
+				catch (e:Error)
+				{
+					Wrapper.print("Failed to parse JSON: " + e.message);
+				}
+			}
+			
+					
+			
+			protected function nextView():void
+			{		
+				navigator.pushView(driverHomeView);			
+			}
+			
+			protected function loggingIn():void
+			{
+				
+				phoneNumber=number.text;
+				userPassword=password.text;
+			}
+		]]>
+		
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		#form, #firstname, #cell, #pass { backgroundAlpha:0; color:#929592 } /* type selector */ 
+		#username, #number, #password, #join {borderVisible:false}
+		#join {chromeColor:#000000;}
+	</fx:Style>
+	
+	
+	<!-- The output for messages etc. dataProvider="{ac}" 
+	<s:TextArea top="2" text="{output}" editable="false" height="50"/>-->
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	<s:BitmapImage width="100%" height="142" source="@Embed('/assets/title.jpg')"/>
+	
+
+		
+		<s:Form id="form" x="44" y="100" width="100%">
+		
+			<s:FormItem id="cell" height="35" skinClass="spark.skins.spark.StackedFormItemSkin">
+				<s:TextInput id="number" width="75%" alpha="0.7" text="Cellphone" textAlign="center" />
+			</s:FormItem>
+			<s:FormItem id="pass" skinClass="spark.skins.spark.StackedFormItemSkin">
+				<s:TextInput id="password" width="75%" alpha="0.7" text="Password" textAlign="center"/>
+			</s:FormItem>
+			
+		</s:Form>
+		
+
+	<s:Label id="license" text="LOG IN" fontSize="27" x="122" bottom="60" width="120" textAlign="center" />
+	<s:Button id="join" x="125" bottom="60" click="loggingIn();nextView()" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>
+	
+	
+</s:View>

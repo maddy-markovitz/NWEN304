@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" backgroundAlpha="0" title="Passenger" actionBarVisible = "false" color="#ffffff">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.ListSkin;
+			
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			import skins.ButtonSkinTrans;
+			import skins.carpoolItemRendererDriver;
+			
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			[Embed("assets/notification.png")]
+			protected var calIcon:Class;
+			[Bindable]
+			[Embed("assets/1.png")]
+			protected var gymIcon:Class;
+			[Bindable]
+			[Embed("assets/9.png")]
+			protected var sportIcon:Class;	
+			[Bindable]
+			[Embed("assets/9tie.png")]
+			protected var workIcon:Class;
+		
+			
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				//currentState = 'default';
+				//menuButton.addEventListener(MouseEvent.CLICK, clicky);
+				//ac.addItem({group_name:"Soccer practice", user_id:"Nick L", icon:sportIcon, 
+					//origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					//arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri"});
+
+				
+				Wrapper.getNotifications(callback);
+				
+			}
+			
+			private function callback(e:Event):void{
+				Wrapper.print("Notifications callback");
+				var res = JSON.parse(e.target.data);
+				for(var g in res){
+					ac.addItem(g);
+				}
+			}
+			
+			protected function prevView():void
+			{			
+				navigator.pushView(joinView);
+			}
+			
+			protected function driverView():void
+			{	
+				navigator.pushView(driverHomeView);	
+			}
+			
+			protected function passengerView():void
+			{	
+				navigator.pushView(passengerHomeView);	
+			}
+			
+			protected function onAdd():void
+			{
+				
+			}
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				navigator.pushView(loginView);	
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+		]]>
+		
+	</fx:Script>
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		#next, #previous {borderVisible:false; chromeColor:#D8D8D8; }
+		
+		
+		
+		
+	</fx:Style>
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	
+	
+	<s:Rect  left="10" right="10" top="49" bottom="180"  >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xffffff" 
+								 
+								 alpha="0.5" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect  left="20" right="20" top="59" bottom="190"  >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x333333" 
+								 
+								 alpha="0.6" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.6"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	<s:Button color="#ffffff" id="passenger" label="" click="passengerView()" left="9" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="1" chromeColor="#333333"/>
+	<s:Button color="#ffffff" id="driver" label="Driver" click="driverView()" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="15" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="passengerLabel" text="Passenger" left="33" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+
+	<!-- <s:List id="list" top="58" left="18" right="18" width="100%" height="200"
+			
+			dataProvider="{ac}" contentBackgroundAlpha="0" fontSize="14" itemRenderer="skins.carpoolItemRendererDriver" 
+			alternatingItemColors="[0x3ab2e1, 0x8fb858, 0x409c4f]" skinClass="spark.skins.mobile.ListSkin">
+		
+		
+	</s:List> -->
+	<s:Label text="03/06/13 Invitation:" width="410" top="80" left="30" height="35" fontSize="16" />
+
+	<s:Label text="Kirsty M invited you to join their group Loyalty NZ" width="310" top="100" left="30" height="35" fontSize="16" />
+	<s:Button skinClass="skins.ButtonSkinBlack" chromeColor="#000000" color="#ffffff" id="acceptRequest" label="Accept" click="driverView()" left="20" top="140" width="110"  height="30" fontSize="12" alpha="0.8"/>
+	<s:Button skinClass="skins.ButtonSkinBlack" chromeColor="#000000" color="#ffffff" id="declineRequest" label="Decline" click="passengerView()" left="140" top="140" width="110" height="30" fontSize="12" alpha="0.8"/>
+	
+	<s:Label text="03/06/13 Pending request: " width="410" top="200" left="30" height="35" fontSize="16" />
+
+	<s:Label text="You requested to join the group Welly Indoor Soccer. " width="310" top="220" left="30" height="35" fontSize="16" />
+	<s:Button skinClass="skins.ButtonSkinBlack" chromeColor="#000000" color="#ffffff" id="cancelRequest" label="Cancel" click="prevView()" left="20" top="260" width="110" height="30" fontSize="12" alpha="0.8"/>
+	
+	<s:Label text="03/06/13 Group joined: " width="310" top="310" left="30" height="35" fontSize="16" />
+	<s:Label text="Your request to join the group K's Bookclub has been accepted. " width="330" top="340" left="30" height="35" fontSize="16" />
+
+	<s:Label id="license" text="REFRESH" fontSize="20" x="114" bottom="65" width="140" textAlign="center" color="#000000"/>
+	<s:Button id="join" x="125" bottom="60" click="driverView();" color="#000000" fontSize="25"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40" />
+	
+	
+</s:View>

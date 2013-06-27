@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		addedToStage="addedToStageHandler(event)"
+		title="Driver" actionBarVisible="false" backgroundAlpha="0" creationComplete="view1_viewActivateHandler()" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.utils.getQualifiedClassName;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+			
+			import skins.ButtonSkinBlack;
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			import skins.ButtonSkinTrans;
+			import skins.carpoolItemRenderer;
+			
+			import views.notificationsView;
+			import views.passengerHomeView;
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			[Bindable]protected var dc:ArrayCollection = new ArrayCollection();
+			
+			protected var transition:SlideViewTransition = new SlideViewTransition();
+			private var currentPick:String="s3";
+			private var s1:String="s1";
+			private var s2:String="s2";
+			private var s3:String="s3";
+			
+			import mx.collections.ArrayCollection;
+			
+			import pl.mllr.extensions.contactEditor.ContactEditor;
+			import pl.mllr.extensions.contactEditor.ContactEditorEvent;
+			
+			import spark.events.IndexChangeEvent;
+			//import spark.events.TextOperationEvent;
+			[Bindable]
+			private var myDB:ArrayCollection;
+			
+			protected var _filterUpper:String = "";
+			
+			private var contactEditor:ContactEditor;
+			
+			
+			protected function addedToStageHandler(event:Event):void
+			{
+				if(ContactEditor.isSupported){
+					contactEditor=new ContactEditor();
+					contactEditor.addEventListener(StatusEvent.STATUS,onStatus);
+					contactEditor.addEventListener(ContactEditorEvent.CONTACT_SELECTED,onContactSelectedHanlder);
+					
+				}else{
+					//enabled = false;
+					//textArea.text ="CONTACT EDITOR IS NOT SUPPORETED ON THIS PLATFORM";
+				}
+			}
+			protected function onStatus(event:StatusEvent):void
+			{
+				//textArea.appendText(event.code+":     "+event.level+"\n");
+			}
+			private function onContactSelectedHanlder(event:ContactEditorEvent):void
+			{
+				//textArea.appendText("got contact with id :     "+event.recordId+"\n");
+				readDetails(contactEditor.getContactDetails(event.recordId));
+			}
+			
+			
+			private function readDetails(obj:Object):void
+			{
+				if(obj==null)
+					return;
+				var seatChoice=currentPick;
+				
+				//textArea.appendText(listAllPrimitivesInObject(obj));
+				//searchGroupNo.text=obj.phones;
+				//currentPick.text=obj.phones;
+				//seatChoice.text=obj.phones;
+				//searchGroupNo2.text=obj.phones;
+				if (currentPick==s1)
+					seat1.text=obj.phones;
+					//license.text=currentPick;
+				else if (currentPick==s2)
+					//license.text=currentPick;
+					seat2.text=obj.phones;
+				else 
+					seat3.text=obj.phones;
+					//license.text=currentPick;
+				
+				
+			}
+			private function listAllPrimitivesInObject(obj:Object,space:String=""):String
+			{
+				if(obj==null)
+					return "";
+				var t:String = "";
+				var innerObj:Object;
+				//var seat3=currentPick;
+				//var seatChoice=currentPick+".text=obj.phones";
+				
+				if (currentPick==s1)
+					var seatChoice:String="seat1.text=obj.phones"
+					//license.text=currentPick;
+				else if (currentPick==s2)
+					var seatChoice:String="seat2.text=obj.phones"
+				else 
+				var seatChoice:String="seat3.text=obj.phones"
+				
+				
+				//if (currentPick="s1"){
+					//seatChoice="seat1";
+				//}else if (currentPick="s2"){
+				//seatChoice="seat2";
+				//}else{
+				
+				//	seatChoice="seat1";
+				//}
+				
+				for (var j:Object in obj)
+				{
+					innerObj = obj[j];
+					if(innerObj is String || innerObj is int || innerObj is Number || innerObj is uint || innerObj is Boolean  || innerObj is uint){
+						t+=space+"*"+String(j) + " : " + String(innerObj) +  "\n";
+					}else{
+						t+=space+"*"+String(j)+"  "+getQualifiedClassName(innerObj)+"\n";
+						t+=listAllPrimitivesInObject(innerObj,space+"      ");
+					}
+				}
+				
+				//return currentPick.text=obj.phones;
+				//if (currentPick="seat3")
+					//return seat3.text=obj.phones;
+				return seatChoice;
+				//else if (currentPick="seat2")
+					//return seat3.text=obj.phones;
+				//obj.compositename;
+			}
+			
+			
+			private function setPick(pick:String):void{
+				 currentPick=pick;
+			}
+			
+			
+			//remove person from carpool and send them a notification they have been reomoved
+			private function del(pick:String):void{
+				currentPick=pick;
+				
+				if (currentPick==s1)
+					seat1.text="Seat 1";
+					//license.text=currentPick;
+				else if (currentPick==s2)
+					//license.text=currentPick;
+					seat2.text="Seat 2";
+				else
+				seat3.text="Seat 3";
+				//license.text=currentPick;
+			}
+			
+			
+			private function pickContact(event:MouseEvent):void{
+				
+				contactEditor.pickContact(ContactEditor.ANDORID_CONTACT_PICK_BY_PHONE);
+			}
+			
+			
+			protected function view1_viewActivateHandler():void				
+			{
+				//currentState = 'default';		
+				
+				transition.direction = ViewTransitionDirection.LEFT;
+				transition.duration = 100;
+				
+				
+				
+				ac.addItem({group_name:"Soccer practice", label:"1", user_id:"Nick L", 
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});
+				
+				ac.addItem({group_name:"Loyalty NZ", label:"2", user_id:"Kirsty M", 
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});
+				
+				ac.addItem({group_name:"Gym", label:"3", user_id:"Kirsty M",
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});
+			}
+			
+			protected function driverView():void
+			{			
+				navigator.pushView(driverHomeView, null, null, transition);
+			}
+			
+			protected function passengerView():void
+			{ 
+				transition.direction = ViewTransitionDirection.RIGHT;			
+				navigator.pushView(passengerHomeView, null, null, transition);				
+			}
+			
+			
+			
+			protected function notifyView():void
+			{ 
+				navigator.pushView(notificationsView, null, null, transition);				
+			}
+			
+			protected function searchGroups():void
+			{				
+				currentState = 'results';
+			}
+			
+			protected function onChange(event:IndexChangeEvent):void
+			{
+				//search.label = list.selectedItem.label + " selected";
+				//var selected = list.selectedItem.label;
+				//search.label= dc.addItem(ac[1]);
+				
+				
+				//search.label= ac[selected-1].label;
+			}
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+		]]>
+		
+	</fx:Script>
+	
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		#next, #previous {borderVisible:false;}
+		
+	</fx:Style>
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	
+	<s:Rect  left="10" right="10" top="49" bottom="240"  >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xffffff" 
+								 
+								 alpha="0.5" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect  left="20" right="20" top="59" height="50" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x000000" 
+								 
+								 alpha="0.9" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.4"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	
+	<s:Button color="#ffffff" id="passenger" label="" click="passengerView()" left="9" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.8" chromeColor="#000000"/>
+	<s:Button color="#ffffff" id="driver" label="Driver" click="driverView()" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="15" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="passengerLabel" text="Passenger" left="30" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+	
+	
+	<s:Label text="Group name" x="30" y="73" height="60" fontSize="22" color="#ffffff"/>
+	
+	<s:Label width="340" text="Invite OR remove passengers from your carpool. Search for friends by using their phone number" x="20" y="123" height="60" fontSize="15" color="#000000"/>
+
+
+	<s:Form id="form" y="157" backgroundAlpha="0" x="-10" width="250" >
+		
+		<s:FormItem height="55" backgroundAlpha="0" fontSize="15" textAlign="left" >
+			<s:TextInput id="seat1" width="75%" alpha="0.8" textAlign="left" text="Seat 1"/>			
+		</s:FormItem>
+		
+		<s:FormItem height="55" backgroundAlpha="0" fontSize="15" textAlign="left" >
+			<s:TextInput id="seat2" width="75%" alpha="0.8" textAlign="left" text="Seat 2" />			
+		</s:FormItem>
+		
+		<s:FormItem height="55" backgroundAlpha="0" fontSize="15" textAlign="left" >
+			<s:TextInput id="seat3" width="75%" alpha="0.8" textAlign="left" text="Seat 3" />			
+		</s:FormItem>
+		
+	</s:Form>
+	<s:Button id="pick" icon="assets/arrow3.png" skinClass="skins.ButtonSkinTrans" click="setPick(s1), pickContact(event)" color="#ffffff" fontWeight="normal" top="172" x="293" height="40" width="50"/>			
+	
+	<s:Button id="pick2" icon="assets/arrow3.png" skinClass="skins.ButtonSkinTrans" click="setPick(s2), pickContact(event)" color="#ffffff" fontWeight="normal" top="234" x="293" height="40" width="50"/>			
+	
+	<s:Button id="pick3" icon="assets/arrow3.png" skinClass="skins.ButtonSkinTrans" click="setPick(s3), pickContact(event)" color="#ffffff" fontWeight="normal" top="295" x="293" height="40" width="50"/>			
+	
+	<s:Button id="del1" icon="assets/x.png" skinClass="skins.ButtonSkinTrans" click="setPick(s1), del(s1)" color="#ffffff" fontWeight="normal" top="172" x="243" height="40" width="50"/>			
+	
+	<s:Button id="del2" icon="assets/x.png" skinClass="skins.ButtonSkinTrans" click="setPick(s2), del(s2)" color="#ffffff" fontWeight="normal" top="234" x="243" height="40" width="50"/>			
+	
+	<s:Button id="del3" icon="assets/x.png" skinClass="skins.ButtonSkinTrans" click="setPick(s3), del(s3)" color="#ffffff" fontWeight="normal" top="295" x="243" height="40" width="50"/>			
+	
+	
+	<s:Label id="license" text="INVITE" fontSize="27" x="122" bottom="60" width="120" textAlign="center" />
+	<s:Button id="join" x="125" bottom="60" click="driverView()" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>
+	
+	
+	
+	
+	<!--<s:List id="list" top="50" left="10" right="10" width="100%" height="450" includeIn="results"
+	itemRenderer="skins.carpoolItemRendererSearch" 
+	dataProvider="{ac}" contentBackgroundAlpha="0.5" fontSize="14">
+	
+	
+	</s:List>-->
+	
+	
+	
+	
+	
+	
+	
+</s:View>

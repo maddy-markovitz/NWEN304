@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		actionBarVisible="false" backgroundAlpha="0" creationComplete="setup();" title="HomeView">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			//import mx.events.TouchInteractionEvent;			
+			import mx.collections.ArrayCollection;
+			//import mx.rpc.events.ResultEvent;	
+			//import spark.events.ViewNavigatorEvent;
+			//import spark.skins.mobile.ListSkin;
+			//import events.ScrollingEvent;		
+			//import flashx.textLayout.tlf_internal;	
+			//import wrapper;
+			private var fname:String = "kirsty";
+			private var phoneNumber:String = "1";
+			private var userPassword:String = "seecret";
+			import mx.collections.ArrayCollection;
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			//import assets.carpoolItemRenderer;	
+			// The current message we are showing on the screen in the TextArea
+			[Bindable] protected var output:String = "";
+			
+			// Creation Complete
+			public function setup():void
+			{
+				// Attempt to get repsonse from server.
+//				try
+//				{
+//					genLoader().load(genRequest());
+//					print("Loading Tring Data...");
+//				}
+//				catch (error:Error)
+//				{
+//					print("Unable to load URL");
+//				}
+			}
+		
+			
+			// Generates a query string
+			//protected function genQuery():URLVariables
+			//{
+			//	var requestVars:URLVariables = new URLVariables();
+			//	requestVars.icp = "0000067894TR-CE6";
+			//	requestVars.raw_start = "2013-11-01";
+				
+			//	return requestVars;
+			//}
+			
+			// Generates a request.
+			//protected function genRequest():URLRequest
+			//{
+			//	var request:URLRequest = new URLRequest();
+			//	request.url = "http://111.67.18.188/getDriverGroups";
+			//	request.method = URLRequestMethod.GET;
+				//request.data = genQuery();
+				
+		//		return request;
+			//}
+			protected function genRequest(data:Object):URLRequest
+			{
+				var request:URLRequest = new URLRequest();
+				request.url = "http://111.67.18.188/register";
+				request.method = URLRequestMethod.POST;
+				request.contentType = "application/json";
+				request.data = JSON.stringify(data);
+				return request;
+			}
+			
+			// Generates a loader, and applies callbacks.
+			protected function genLoader():URLLoader
+			{
+				var loader:URLLoader = new URLLoader();
+				loader.dataFormat = URLLoaderDataFormat.TEXT;
+				loader.addEventListener(Event.COMPLETE, loaderCompleteHandler);
+				loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatusHandler);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
+				loader.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				
+				return loader;
+			}
+			
+			// Activates when we get a response from the request.
+			public function loaderCompleteHandler(e:Event):void
+			{
+				try 
+				{
+					print(e.target.data);
+//					var res:Object = JSON.parse(e.target.data);
+//					// something
+//					wrapper.session_id = res.session_id;
+//					print(wrapper.session_id);
+					
+				}
+				catch (e:Error)
+				{
+					print("Failed to parse JSON: " + e.message);
+				}
+			}
+			
+			
+			// Error handling - prints errors to console, if request fails.
+			public function httpStatusHandler(e:Event):void
+			{
+				print("httpStatusHandler:" + e.toString());
+			}
+			
+			public function securityErrorHandler (e:Event):void
+			{
+				print("securityErrorHandler:" + e.toString());
+			}
+			
+			public function ioErrorHandler(e:Event):void
+			{
+				print("ioErrorHandler: " + e.toString());
+			}
+			
+			// A function to output messages on the screen and trace them in the console
+			public function print(str:String):void
+			{
+				output = str;
+				trace(str);
+			}
+			
+
+			protected function onAdd():void
+			{
+				var data:Object = new Object();
+				data.phone_number = number.text;
+				data.name = username.text;
+				data.password = password.text;
+				
+//				try
+//				{
+//					genLoader().load(genRequest(data));
+//					print("Loading...");
+//				}
+//				catch (e:Error)
+//				{
+//					print(e.message);
+//				}
+			}
+			
+			protected function nextView():void
+			{
+				//var passed to passengerHomeView
+				navigator.pushView(passengerHomeView,number.text );
+			}
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+		]]>
+		
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";	
+		#form, #firstname, #cell, #pass { backgroundAlpha:0; color:#929592 } /* type selector */ 
+		#username, #number, #password, #join {borderVisible:false}
+		#join {chromeColor:#000000;}
+	</fx:Style>
+	
+	
+	<!-- The output for messages etc. dataProvider="{ac}" 
+	<s:TextArea top="2" text="{output}" editable="false" height="50"/>-->
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	<s:BitmapImage width="100%" height="142" source="@Embed('/assets/title.jpg')"/>
+	
+	<s:Form id="form" x="44" y="100" width="100%">
+		<s:FormItem id="firstname" height="35" skinClass="spark.skins.spark.StackedFormItemSkin" textAlign="center" >
+			<s:TextInput id="username" width="75%" alpha="0.7" text="Name" />
+		</s:FormItem>
+		<s:FormItem id="cell" height="35" skinClass="spark.skins.spark.StackedFormItemSkin">
+			<s:TextInput id="number" width="75%" alpha="0.7" text="Cellphone" textAlign="center" />
+		</s:FormItem>
+		<s:FormItem id="pass" skinClass="spark.skins.spark.StackedFormItemSkin">
+			<s:TextInput id="password" width="75%" alpha="0.7" text="Password" textAlign="center"/>
+		</s:FormItem>
+		
+	</s:Form>
+	<s:Label id="license" text="JOIN" fontSize="27" x="122" bottom="60" width="120" textAlign="center" />
+	<s:Button id="join" x="125" bottom="60" click="onAdd();nextView()" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>
+	
+
+</s:View>

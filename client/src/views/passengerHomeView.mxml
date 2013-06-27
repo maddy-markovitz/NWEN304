@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Employees" xmlns:components="custompopup.components.*"
+		viewActivate="view1_viewActivateHandler(event)"
+		actionBarVisible = "false" backgroundAlpha="0">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			//import mx.rpc.events.ResultEvent		
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.ListSkin;
+
+			import events.ScrollingEvent;
+			
+			//import flashx.textLayout.tlf_internal;
+			
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTrans;
+
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+
+		
+			
+			protected function myList_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				var myScrollEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.SCROLLING_STARTED);
+				this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);		
+			}
+			
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				//passed phone number from JoinView
+				var userNumber=data;
+				
+				//trace("ok view");
+			}
+			
+			protected function myList_clickHandler(event:MouseEvent):void
+			{
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+			
+			protected function myList_creationCompleteHandler(event:FlexEvent):void
+			{
+				ac.addItem({group_name:"Soccer practice for Wainui", user_id:"Nick L", id:"1", icon:"assets/s.png", 
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"3/3"});
+				
+				ac.addItem({group_name:"Loyalty NZ Work Group", user_id:"Kirsty M", id:"2", icon:"assets/i.png",
+					origin:"Petone, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/4"});
+				
+				ac.addItem({group_name:"Kirsty's Gym", user_id:"Kirsty M", id:"3", icon:"assets/k.png",
+					origin:"Eastbourne, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/4"});
+
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+			}
+			
+			private function onTapItem(event:ScrollingEvent):void
+			{
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+			
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+			
+			private function getItemIndexByProperty(array:ArrayCollection, property:String, value:String):Number
+			{
+				
+				for (var i:Number = 0; i < array.length; i++)
+				{
+					var obj:Object = Object(array[i])
+					if (obj[property] == value)
+						return i;
+				}
+				return -1;
+			}
+			
+			private function onDeleteAction(event:ScrollingEvent):void
+			{
+
+				
+				var userIndex:int = getItemIndexByProperty(ac, "id", String(event.userId));
+				ac.removeItemAt(userIndex);
+			}
+			
+		 	//navigation
+			protected function passengerView():void
+			{
+				navigator.pushView(passengerHomeView);
+				
+			}
+			
+			protected function driverView():void
+			{ 
+				
+				navigator.pushView(driverHomeView);
+				
+			}
+			
+			protected function notifyView():void
+			{ 
+				
+				navigator.pushView(notificationsView);
+				
+			}
+			
+			protected function searchGroups():void
+			{
+				navigator.pushView(searchGroupView);
+			}
+			
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				navigator.pushView(loginView);	
+				
+			}
+			
+			
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+			
+			
+///temporary functions, to be deleted, only here as can't access buttons as side swipe doesn't work on desktop
+			protected function map():void
+			{
+				navigator.pushView(mapView);
+				
+			}
+			
+			//if called through temporary button, will be empty
+			protected function details():void
+			{
+				navigator.pushView(EmployeeDetailsView);
+				
+			}
+
+		]]>
+		
+	</fx:Script>
+	
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	
+	<s:Rect  left="10" right="10" top="49" height="10" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF" 
+								 
+								 alpha="0.4" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.4"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	
+	<s:Button color="#ffffff" id="passenger" label="" click="passengerView()" left="9" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.8" chromeColor="#000000"/>
+	<s:Button color="#ffffff" id="driver" label="Driver" click="driverView()" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="15" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="passengerLabel" text="Passenger" left="33" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+
+	
+	<s:List maxHeight="360" contentBackgroundAlpha="0" chromeColor="0xFFFFFF" fontSize="14" skinClass="spark.skins.mobile.ListSkin" top="49" left="10" right="10" width="100%" dataProvider="{ac}" creationComplete="myList_creationCompleteHandler(event)" itemRenderer="views.MyIR" touchInteractionStart="myList_touchInteractionStartHandler(event)" id="myList"/>
+	
+	<!-- temp buttons, to be deleted-->
+	<s:Button id="searchx" label="map" click="map()" color="#000000" skinClass="skins.ButtonSkinBlack" bottom="120" x="120" fontWeight="normal" width="120" height="30" alpha="0.9"/>
+	<s:Button id="searchy" label="Group details" click="details()" color="#000000" skinClass="skins.ButtonSkinBlack" bottom="100" x="120" fontWeight="normal" width="120" height="30" alpha="0.9"/>
+	
+	
+	<s:Label id="license" text="SEARCH" fontSize="27" x="122" bottom="60" width="120" textAlign="center" />
+	<s:Button id="search" click="searchGroups()" color="#000000" skinClass="skins.ButtonSkinTrans" bottom="60" x="120" fontWeight="normal" width="120" height="40" alpha="0.9"/>
+	
+</s:View>

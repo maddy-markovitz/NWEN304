@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Driver" actionBarVisible="false" backgroundAlpha="0" viewActivate="view1_viewActivateHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.ListSkin;
+			import spark.skins.spark.StackedFormItemSkin;
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+			
+			import skins.ButtonSkinBlack;
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			import skins.ButtonSkinTrans;
+			
+			import views.joinView;
+			import views.notificationsView;
+			import views.passengerHomeView;
+			
+			
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			[Embed("assets/notification.png")]
+			protected var calIcon:Class;
+			
+			[Bindable]
+			[Embed("assets/1.png")]
+			protected var gymIcon:Class;
+			
+			[Bindable]
+			[Embed("assets/9.png")]
+			protected var sportIcon:Class;
+			
+			[Bindable]
+			[Embed("assets/9tie.png")]
+			protected var workIcon:Class;
+			protected var groupName:String;
+			protected var origin:String;
+			protected var destination:String;
+			protected var arrive:String;
+			protected var departure:String;
+			protected var days:String;
+			protected var seats:String;
+			
+			protected var isMenuShowing:Boolean;
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				
+				
+				
+				//addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				//addEventListener(MouseEvent.MOUSE_DOWN,onMouseDown);
+				
+				//list.setStyle("contentBackgroundColor", evt.color);
+			}
+			
+			protected function driverView():void
+			{
+			
+				navigator.pushView(driverHomeView);
+			}
+			
+			protected function passengerView():void
+			{ 
+				navigator.pushView(passengerHomeView);
+				
+			}
+			
+			protected function notifyView():void
+			{
+				navigator.pushView(notificationsView);
+				
+			}
+			
+			protected function saveGroups():void
+			{
+				//lbl.text = list.selectedItem.label + " selected";
+			 groupName=txtgroupName.text;
+			 origin=txtorigin.text;
+			 days=txtdays.text;
+			 seats=txtseats.text;
+			 destination=txtdestination.text;
+			 departure=txtdeparture.text;
+			 var dataArray = new Array(groupName, origin, destination, arrive, departure, seats, days);
+			 Wrapper.createGroup(callback, dataArray);
+			}
+			
+			
+			
+			//Called by the HTTP handler when it receives a valid result
+			//Do something with the returned data here
+			protected function callback(e:Event){
+				var res = JSON.parse(e.target.data);
+			}
+
+			
+			protected function onChange(event:IndexChangeEvent):void
+			{
+				//				lbl.text = list.selectedItem.label + " selected";
+			}
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+		]]>
+		
+	</fx:Script>
+	
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		#next, #previous {borderVisible:false;}
+			
+	</fx:Style>
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	<s:Rect  left="10" right="10" top="49" height="350" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF" 
+								 
+								 alpha="0.4" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.4"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	
+	<!-- The output for messages etc. dataProvider="{ac}" 
+	<s:TextArea left="32" top="2" right="32" text="{output}" editable="false" height="50"/>-->
+	
+	<s:Button id="passenger" label="Passenger" click="passengerView()" left="10" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000" color="#ffffff"/>
+	<s:Button id="driver" label="" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="1" chromeColor="#333333" color="#ffffff"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="12" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="driverLabel" text="Driver" left="153" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+	
+	
+	
+	<s:Form id="form" y="55" backgroundAlpha="0">
+		
+		<s:FormItem height="35" backgroundAlpha="0" label="Group name" fontSize="14" textAlign="right" >
+			<s:TextInput id="txtgroupName" width="50%" alpha="0.8" textAlign="left" />			
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" label="Origin" fontWeight="normal" fontSize="14" textAlign="right">
+			<s:TextInput id="txtorigin" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" fontSize="14" label="Arrival time" textAlign="right">
+			<s:TextInput id="txtarrive" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" fontSize="14" label="Destination" textAlign="right">
+			<s:TextInput id="txtdestination" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" fontSize="14" label="Departure time" textAlign="right">
+			<s:TextInput id="txtdeparture" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" fontSize="14" label="Seats offered" textAlign="right">
+			<s:TextInput id="txtseats" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		<s:FormItem height="35" backgroundAlpha="0" fontSize="14" label="Days of week" textAlign="right">
+			<s:TextInput id="txtdays" width="50%" alpha="0.8" textAlign="left"/>
+		</s:FormItem>
+		
+	</s:Form>
+	
+	
+	<s:Label id="license" text="CREATE GROUP" fontSize="20" x="114" bottom="65" width="140" textAlign="center" />
+	<s:Button id="join" x="125" bottom="60" click="saveGroups();driverView()" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>
+	
+	
+	
+	
+	
+	    
+	
+
+	
+</s:View>

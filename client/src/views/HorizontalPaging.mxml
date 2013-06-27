@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+        xmlns:s="library://ns.adobe.com/flex/spark" title="{data}"  actionBarVisible="false" backgroundAlpha="0" viewActivate="view1_viewActivateHandler(event)">
+    <fx:Declarations>
+        <!-- Place non-visual elements (e.g., services, value objects) here -->
+    </fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+			
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			import skins.ButtonSkinTrans;
+			import skins.carpoolItemRenderer;
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			// The current message we are showing on the screen in the TextArea
+			[Bindable] protected var output:String = "";
+			protected var transition:SlideViewTransition = new SlideViewTransition();
+			//protected var gi:Number;
+
+
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				
+				
+				transition.direction = ViewTransitionDirection.LEFT;
+				transition.duration = 100;
+				
+				
+				
+				ac.addItem({group_name:"Soccer practice", user_id:"Nick L", phonenumber:"0221615775",
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});
+				
+				ac.addItem({group_name:"Loyalty NZ", user_id:"Kirsty M", phonenumber:"0221615773",
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});
+				
+				ac.addItem({group_name:"Gym", user_id:"Kirsty M", phonenumber:"0221615774",
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/3"});	
+				
+			}
+			
+			protected function prevView():void
+			{
+				navigator.pushView(passengerHomeView, null, null, transition);
+			}
+			
+			protected function nextView():void
+			{ 
+				transition.direction = ViewTransitionDirection.RIGHT;
+				navigator.pushView(joinView, null, null, transition);
+				
+			}
+			
+			protected function notifyView():void
+			{ 
+				navigator.pushView(notificationsView, null, null, transition);
+				
+			}
+			
+			protected function driverView():void
+			{ 
+				
+				navigator.pushView(driverHomeView, null, null, transition);
+				
+			}
+			
+			protected function passengerView():void
+			{ 
+				
+				navigator.pushView(passengerHomeView, null, null, transition);
+				
+			}
+			
+			//protected function closeButton(event:MouseEvent):void
+			//{
+				
+		//		currentState = 'default';
+			//}
+			
+			protected function joinGroup(event:MouseEvent):void
+			{
+				navigator.pushView(passengerHomeView, null, null, transition);
+				//currentState = 'popup';
+			}
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				Wrapper.logout();
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+		]]>
+		
+	</fx:Script>
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	<s:Rect  left="10" right="10" top="49" bottom="180"  >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xffffff" 
+								 
+								 alpha="0.5" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect  left="20" right="20" top="59" bottom="190"  >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x333333" 
+								 
+								 alpha="1" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+	
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.4"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	
+	<s:Button color="#ffffff" id="passenger" label="" click="passengerView()" left="9" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.8" chromeColor="#000000"/>
+	<s:Button color="#ffffff" id="driver" label="Driver" click="driverView()" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="15" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="passengerLabel" text="Passenger" left="33" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+
+	<s:Label text="Results for {data}" left="30" top="75" color="#ffffff" fontSize="16"/>
+		
+	
+	
+    <s:List id="pagedList"
+            top="58" left="10" right="10" width="100%" height="555" chromeColor="0xD8D8D8" 
+            verticalScrollPolicy="off" horizontalScrollPolicy="on"
+            pageScrollingEnabled="true"
+			itemRenderer="skins.carpoolItemRendererSearch" 
+            skinClass="skins.PagedListSkin"
+			dataProvider="{ac}" contentBackgroundAlpha="0" fontSize="16" >
+        <s:layout>
+            <s:TileLayout orientation="rows" requestedRowCount="1" 
+                          columnWidth="{pagedList.width}" rowHeight="{pagedList.height}" 
+                          verticalGap="0" horizontalGap="0"/>
+        </s:layout>
+
+    </s:List>
+	
+	
+<!--<s:Label includeIn="popup" text="Thanks for using Carful. You will be notified if you request to join this group is accepted." width="210" left="10" height="30" fontSize="16" top="20"/>
+	
+<s:Button includeIn="popup" label="Close" id="close" mouseDown="closeButton(event)" left="120" height="40" width="80" top="270" /> -->
+	
+
+	
+	<!--<s:Label id="license" text="JOIN" fontSize="20" x="114" bottom="65" width="140" textAlign="center" />
+	<s:Button label="Join" id="joinButton" x="125" bottom="60" mouseDown="joinGroup(event)" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>-->
+
+</s:View>

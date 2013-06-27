@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	autoDrawBackground="false" creationComplete="setup();" color="#ffffff">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+			
+			import events.ScrollingEvent;
+			
+			import skins.carpoolItemRenderer;
+			
+			import views.mapView;
+			/////
+			
+			
+			private var phoneNumber:String = "0221615775";
+			import mx.collections.ArrayCollection;
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			// The current message we are showing on the screen in the TextArea
+			[Bindable] protected var output:String = "";
+			import spark.components.ViewNavigator;
+			import spark.transitions.SlideViewTransition;
+			import spark.transitions.ViewTransitionDirection;
+
+			protected var transition:SlideViewTransition = new SlideViewTransition();
+
+			public function setup():void
+			{
+				// Attempt to get repsonse from server.
+				try
+				{
+					genLoader().load(genRequest());
+					print("Loading Tring Data...");
+				}
+				catch (error:Error)
+				{
+					print("Unable to load URL");
+				}
+			}
+			
+			
+			
+			
+			// Generates a request.
+			protected function genRequest():URLRequest
+			{
+				var request:URLRequest = new URLRequest();
+				request.url = "http://111.67.18.188/getDriverGroups";
+				request.method = URLRequestMethod.GET;
+				//request.data = genQuery();
+				
+				return request;
+			}
+			
+			// Generates a loader, and applies callbacks.
+			protected function genLoader():URLLoader
+			{
+				var loader:URLLoader = new URLLoader();
+				loader.dataFormat = URLLoaderDataFormat.TEXT;
+				loader.addEventListener(Event.COMPLETE, loaderCompleteHandler);
+				loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatusHandler);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
+				loader.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				
+				return loader;
+			}
+			
+			// Activates when we get a response from the request.
+			public function loaderCompleteHandler(e:Event):void
+			{
+				try 
+				{
+					print(e.target.data);
+					var res:Object = JSON.parse(e.target.data);
+					for (var gi in res) {
+						print(res[gi].group_name);
+					}
+				}
+				catch (e:Error)
+				{
+					print("Failed to parse JSON: " + e.message);
+				}
+			}
+			
+			
+			// Error handling - prints errors to console, if request fails.
+			public function httpStatusHandler(e:Event):void
+			{
+				print("httpStatusHandler:" + e.toString());
+			}
+			
+			public function securityErrorHandler (e:Event):void
+			{
+				print("securityErrorHandler:" + e.toString());
+			}
+			
+			public function ioErrorHandler(e:Event):void
+			{
+				print("ioErrorHandler: " + e.toString());
+			}
+			
+			
+			// A function to output messages on the screen and trace them in the console
+			public function print(str:String):void
+			{
+				output = str;
+				trace(str);
+			}
+			
+			
+			protected function handleMouseDown(event:MouseEvent):void
+			{
+				
+				
+			
+				<!--navigator.pushView(mapView);-->
+			}
+			
+		
+			
+			
+			
+			protected function joinGroup(groupname):void
+			{
+				//var e : MouseEvent = new MouseEvent("menuClick");
+								
+				//var e : MouseEvent = new MouseEvent(
+				//dispatchEvent(e);
+				//trace("tsest work");
+				//event.stopImmediatePropagation();
+//				confirmation.text=this.data.group_name;
+				//currentState = 'popup';
+				var groupName = groupname;
+				//navigator.pushView(driverHomeView)
+				//this.parentApplication.navigator.pushView(views.driverHomeView);
+				//addMe.label = groupName;
+				 
+			}
+			
+		
+			
+			
+		
+		
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="popup"/>
+	</s:states>
+	<!--<s:Rect  id="rect1" left="4" width="330" height="350" includeIn="default">
+		<s:fill>
+			<s:SolidColor color="0xffffff" alpha="0.5"/>
+		</s:fill>
+	</s:Rect>-->
+
+	<s:Label includeIn="default" text="Group name: {this.data.group_name}" width="210" left="20" height="30" fontSize="16" top="50"/>
+	<s:Label includeIn="default" text="Group creator: {this.data.user_id}" width="210" left="20" height="30" fontSize="16" top="80"/>
+	<s:Label includeIn="default" text="Origin: {this.data.origin}" top="110" left="20"/>
+	<s:Label includeIn="default" text="Destination: {this.data.destination}" top="140" left="20"/>
+	<s:Label includeIn="default" text="Departure time: {this.data.arrival_time}" top="170" left="20"/>
+	<s:Label includeIn="default" text="Arrival time: {this.data.departure_time}" top="200" left="20"/>
+	<s:Label includeIn="default" text="Days of the week: {this.data.days}" top="230" bottom="10" left="20"/>
+	<s:Label includeIn="default" text="Seats available:{this.data.seats}" top="260" bottom="10" left="20"/>
+	
+	<s:Label id="license" text="JOIN GROUP" fontSize="22" x="103" bottom="64" width="140" textAlign="center" color="#000000"/>
+	<s:Button id="addMe" label="" click="joinGroup(this.data.group_name)" x="105" bottom="60" width="140" skinClass="skins.ButtonSkinTrans" height="40" fontSize="12" alpha="1"/>
+
+	
+
+	
+	
+		
+	
+	
+</s:ItemRenderer>

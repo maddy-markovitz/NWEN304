@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Map" 
+		viewDeactivate="removeStageWebViewHandler(event)" 
+		actionBarVisible="false" backgroundAlpha="0" 
+		viewActivate="view1_viewActivateHandler(event)" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.ViewNavigatorEvent;
+			
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			protected var groupName:String;
+			protected var origin:String;
+			protected var destination:String;
+			private var myWebView:StageWebView;
+			//private var groupName:"My Group";
+			private var city:String;
+			//private var city2:"59 Viewmont Drive, Lower Hutt";
+			//private var groupName:"My Group";
+			//private var city:"11 Cable street, Wellington";
+			//private var city2:"59 Viewmont Drive, Lower Hutt";
+			
+			//geo location
+			import flash.sensors.Geolocation;
+						
+			protected var g:Geolocation = new Geolocation();    
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				city = "59 viewmont drive, lower hutt";
+				myWebView = new StageWebView();
+				myWebView.stage = this.stage;
+				// myWebView.loadURL("http://maps.google.com"); // default
+				//myWebView.loadURL("http://maps.google.com/maps?f=q&source=s_q&hl=en&geocode=&q="+ city + "&z=14&sensor=true");
+				
+				myWebView.loadURL("http://subrosadesignstudios.com/map.html");
+				//myWebView.loadURL("http://maps.googleapis.com/maps/api/staticmap?path=color:0x0000ff|weight:5|"+city+"|"+city2+"&zoom=13&size=600x300&key=AIzaSyAodYwnW4Srw4qn2dyeEdLf5jTQ4Qy6D3g&sensor=true");
+				myWebView.viewPort = new Rectangle(0,98,stage.width,1120);
+				
+				
+				if (Geolocation.isSupported)
+				{
+					// Note: un-comment the muted check for android OS, however there is currently a bug on iOS where it will always return
+					//      muted and not update the location if left uncommented. 
+					/* if (g.muted)
+					{
+					log.text = "Access to GPS has been muted";
+					return;
+					} */
+					
+					//log.text = "Finding Location...";
+					g.addEventListener(GeolocationEvent.UPDATE, onUpdate);
+					addEventListener(ViewNavigatorEvent.REMOVING,onRemove);
+				}
+				else
+				{
+					//currentState = "unsupported";
+					//lblSupport.text = "Geolocation is not supported on this device.";
+				}    
+			}
+			
+			protected function onUpdate(event:GeolocationEvent):void
+			{
+				trace("Update event called");
+				var myLat = event.latitude;
+				var myLong = event.longitude;
+				//log.text = "latitude = " + event.latitude + 
+					//"\nlongitude = " + event.longitude;        
+				// auto-scroll the text area to the latest text
+				//StyleableTextField(log.textDisplay).scrollV = StyleableTextField(log.textDisplay).scrollV+1;
+			}
+			
+			protected function onRemove(event:ViewNavigatorEvent):void
+			{
+				g.removeEventListener(GeolocationEvent.UPDATE, onUpdate);                
+			}
+			///////////////////////////////
+			
+			/**
+			 * @protected 
+			 * Just add and set site of my StageWebView 
+			 * */
+			
+			//protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			//{
+				
+				// set the city with data default property of each view
+				
+				//city = data.toString();
+				//city = "59 viewmont drive, lower hutt";
+				//myWebView = new StageWebView();
+				//myWebView.stage = this.stage;
+				// myWebView.loadURL("http://maps.google.com"); // default
+				//myWebView.loadURL("http://maps.google.com/maps?f=q&source=s_q&hl=en&geocode=&q="+ city + "&z=14&sensor=true");
+				
+				//myWebView.loadURL("http://subrosadesignstudios.com/map.html");
+				//myWebView.loadURL("http://maps.googleapis.com/maps/api/staticmap?path=color:0x0000ff|weight:5|"+city+"|"+city2+"&zoom=13&size=600x300&key=AIzaSyAodYwnW4Srw4qn2dyeEdLf5jTQ4Qy6D3g&sensor=true");
+				//myWebView.viewPort = new Rectangle(0,98,stage.width,1120);
+				
+				
+			//}
+			
+			
+			/** 
+			 * @private
+			 *  
+			 * Just override to re-scale due to auto-orientation project nature
+			 * */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void {
+				
+				
+				if (myWebView) {
+					var point:Point = localToGlobal(new Point());
+					//myWebView.viewPort = new Rectangle(0,0,stage.stageWidth,stage.stageHeight);
+					myWebView.viewPort = new Rectangle(0,98,stage.width,1120);
+				}
+			}	
+			override protected function stateChanged(oldState:String, newState:String, recursive:Boolean):void
+			{
+				
+			}
+			
+			protected function goBackHandler(event:MouseEvent):void
+			{
+				
+				navigator.popToFirstView();
+				
+			}
+			
+			protected function removeStageWebViewHandler(event:ViewNavigatorEvent):void
+			{
+				myWebView.stage = null;
+				// just remove the target and will leave.
+				
+			}
+			
+	
+			
+			protected function driverView():void
+			{
+				
+				navigator.pushView(driverHomeView);
+			}
+			
+			
+			protected function passengerView():void
+			{
+				navigator.pushView(passengerHomeView);
+			}
+			
+			protected function notifyView():void
+			{ 
+				navigator.pushView(notificationsView);
+				
+			}
+
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						
+						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						
+						break; 
+					case "Log out" : 
+						logout();						
+						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				navigator.pushView(loginView);
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+
+		]]>
+		
+	</fx:Script>
+	
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		#next, #previous {borderVisible:false;}
+			
+	</fx:Style>
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	
+	<s:Button color="#ffffff" id="passenger" label="" click="passengerView()" left="9" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.8" chromeColor="#000000"/>
+	<s:Button id="driver" label="driver" click="driverView()" left="123" top="10" width="115" skinClass="skins.ButtonSkinTab" height="40" fontSize="14" alpha="1" chromeColor="#666666"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="220" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="12" alpha="1" icon="@Embed(source='assets/notification.png')"/>
+	<!--<s:TextArea id="log" editable="false" height="50" bottom="30"/>-->
+
+
+</s:View>

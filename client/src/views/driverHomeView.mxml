@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" creationComplete="setup();" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Driver" actionBarVisible="false" 
+		backgroundAlpha="0" viewActivate="view1_viewActivateHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.sensors.Geolocation;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.ListSkin;
+			
+			import events.ScrollingEvent;
+			
+			import skins.ButtonSkinBlack;
+			import skins.ButtonSkinIcon;
+			import skins.ButtonSkinTab;
+			import skins.ButtonSkinTrans;
+			//import skins.carpoolItemRenderer;
+
+			private var fname:String = "kirsty";
+			private var phoneNumber:String = "1";
+			private var userPassword:String = "seecret";
+			
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			[Bindable] protected var output:String = "";
+			//geo location
+			import flash.sensors.Geolocation;
+			protected var g:Geolocation = new Geolocation();    
+			
+			// Creation Complete
+			public function setup():void
+			{
+				// Attempt to get repsonse from server.
+				try
+				{
+					Wrapper.login(loaderCompleteHandler, phoneNumber, userPassword);
+					//Changed this line to use wrapper class --Maddy
+					
+					Wrapper.getDriverGroups(loaderCompleteHandler);
+
+					print("Loading Tring Data...");
+				}
+				catch (error:Error)
+				{
+					print("Unable to load URL");
+				}
+			}
+			
+			
+			// Generates a query string
+			//protected function genQuery():URLVariables
+			//{
+				//var requestVars:URLVariables = new URLVariables();
+				//requestVars.icp = "0000067894TR-CE6";
+				//requestVars.raw_start = "2013-11-01";
+				
+				//return requestVars;
+			//}
+									
+			// Activates when we get a response from the request.
+			public function loaderCompleteHandler(e:Event):void
+			{
+				try 
+				{
+					print(e.target.data);
+					var res:Object = JSON.parse(e.target.data);
+					Wrapper.session_id = res["session_id"];
+					print("Ses id in driverHomeView:");
+					print(Wrapper.session_id);
+					Wrapper.getDriverGroups(loaderCompleteHandler);
+					for (var gi in res) {
+						print(res[gi].group_name);
+					}
+				}
+				catch (e:Error)
+				{
+					print("Failed to parse JSON: " + e.message);
+				}
+			}
+			
+			
+			// Error handling - prints errors to console, if request fails.
+			public function httpStatusHandler(e:Event):void
+			{
+				print("httpStatusHandler:" + e.toString());
+			}
+			
+			public function securityErrorHandler (e:Event):void
+			{
+				print("securityErrorHandler:" + e.toString());
+			}
+			
+			public function ioErrorHandler(e:Event):void
+			{
+				print("ioErrorHandler: " + e.toString());
+			}
+
+			
+			// A function to output messages on the screen and trace them in the console
+			public function print(str:String):void
+			{
+				output = str;
+				trace(str);
+			}
+			
+			
+			protected function myList_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				var myScrollEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.SCROLLING_STARTED);
+				this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);
+					
+			}
+			
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				
+				trace("ok view");
+				
+				if (Geolocation.isSupported)
+				{
+					// Note: un-comment the muted check for android OS, however there is currently a bug on iOS where it will always return
+					//      muted and not update the location if left uncommented. 
+					/* if (g.muted)
+					{
+					log.text = "Access to GPS has been muted";
+					return;
+					} */
+					
+					//log.text = "Finding Location...";
+					g.addEventListener(GeolocationEvent.UPDATE, onUpdate);
+					addEventListener(ViewNavigatorEvent.REMOVING,onRemove);
+				}
+				else
+				{
+					
+				}    
+				
+			}
+			// Geolocation
+			protected function onUpdate(event:GeolocationEvent):void
+			{
+				trace("Update event called");
+				var myLat = event.latitude;
+				var myLong = event.longitude;
+				
+			}
+			
+			// Geolocation
+			protected function onRemove(event:ViewNavigatorEvent):void
+			{
+				g.removeEventListener(GeolocationEvent.UPDATE, onUpdate);                
+			}
+
+			
+
+			
+			protected function myList_clickHandler(event:MouseEvent):void
+			{
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+
+			protected function myList_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				
+				ac.addItem({group_name:"Soccer practice for Wainui", user_id:"Nick L", id:"1", icon:"assets/s.png", 
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/4"});
+				
+				ac.addItem({group_name:"Loyalty NZ Work Group", user_id:"Kirsty M", id:"2", icon:"assets/i.png",
+					origin:"Petone, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/4"});
+				
+				ac.addItem({group_name:"Kirsty's Gym", user_id:"Kirsty M", id:"3", icon:"assets/k.png",
+					origin:"Eastbourne, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri", seats:"2/4"});
+				
+
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+			}
+			
+			
+		
+			private function onDeleteAction(event:ScrollingEvent):void
+			{
+
+				var userIndex:int = getItemIndexByProperty(ac, "id", String(event.userId));
+				ac.removeItemAt(userIndex);
+			}
+			
+			private function onTapItem(event:ScrollingEvent):void
+			{
+			
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+				
+				navigator.pushView(views.updateGroupView, myList.selectedItem);
+			}
+			
+			private function getItemIndexByProperty(array:ArrayCollection, property:String, value:String):Number
+			{
+				
+				for (var i:Number = 0; i < array.length; i++)
+				{
+					var obj:Object = Object(array[i])
+					if (obj[property] == value)
+						return i;
+				}
+				return -1;
+			}
+	
+	
+			protected function nextView():void
+			{ 	
+				navigator.pushView(joinView);	
+			}
+			
+			protected function notifyView():void
+			{ 
+				navigator.pushView(notificationsView);	
+			}
+			
+			protected function createGroups():void
+			{
+				navigator.pushView(createGroupView);
+			}
+			
+			protected function onChange(event:IndexChangeEvent):void
+			{
+				
+			}
+			
+			protected function passengerView():void
+			{ 
+				
+				navigator.pushView(passengerHomeView);				
+			}
+			
+			protected function startGPS():void
+			{
+				
+			}
+			protected function deleteGroup():void
+			{
+				
+			}
+			protected function editMembers():void
+			{
+				navigator.pushView(membersView);
+			}
+			protected function editGroups():void
+			{		
+				navigator.pushView(updateGroupView);
+			}
+			
+			// The event listener for the click event.
+			private function itemClickInfo(event:MouseEvent):void {
+				switch (event.currentTarget.label) { 
+					case "Notifications" : 
+						navigator.pushView(notificationsView);						break; 
+					case "Carbon savings" : 
+						navigator.pushView(treeView);						break; 
+					case "Log out" : 
+						logout();						break; 
+				}                
+			}
+			
+			protected function logout():void
+			{
+				navigator.pushView(loginView);	
+				
+			}
+			
+			protected function view1_menuKeyPressedHandler(event:FlexEvent):void
+			{
+				trace("Menu key pressed");
+				
+			}
+			
+			
+			protected function view1_mouseDownHandler(event:MouseEvent):void
+			{
+				mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;
+				trace("Mouse down");
+			}
+			
+///temporary functions, to be deleted, only here as can't access buttons as side swipe doesn't work on desktop
+			protected function gps():void
+			{
+				
+				
+			}
+			
+			//if called through temporary button, array will be empty
+			protected function updateDetails():void
+			{
+				navigator.pushView(updateGroupView);
+				
+			}
+			protected function groupMembers():void
+			{
+				navigator.pushView(membersView);
+				
+			}
+			
+		]]>
+		
+	</fx:Script>
+	
+
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Notifications" click="itemClickInfo(event)" color="#ffffff" height="35" top="35"/>
+		<s:ViewMenuItem label="Carbon savings" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		<s:ViewMenuItem label="Log out" click="itemClickInfo(event)" color="#ffffff" height="35"/>
+		
+	</s:viewMenuItems>
+	
+	<s:BitmapImage width="100%" height="100%" source="@Embed('/assets/BG2.jpg')"/>
+	<s:Rect  left="10" right="10" top="49" height="10" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF" 
+								 
+								 alpha="0.4" />
+				
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse left="310" top="11" height="36" width="36">
+		<s:fill>
+			
+			<s:RadialGradient>
+				<s:entries>
+					<s:GradientEntry color="0x000000" alpha="0.4"/>
+					
+				</s:entries>
+			</s:RadialGradient>
+		</s:fill>
+	</s:Ellipse>
+	
+	<!-- The output for messages etc. dataProvider="{ac}" 
+	<s:TextArea left="32" top="2" right="32" text="{output}" editable="false" height="50"/>-->
+	
+	<s:Button id="passenger" label="Passenger" click="passengerView()" left="10" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="0.3" chromeColor="#000000" color="#ffffff"/>
+	<s:Button id="driver" label="" left="119" top="10" width="109" skinClass="skins.ButtonSkinTab" height="40" fontSize="15" alpha="1" chromeColor="#333333" color="#ffffff"/>
+	<s:Button id="notifications" click="mx.core.FlexGlobals.topLevelApplication.viewMenuOpen=true;" left="273" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="12" alpha="1" icon="@Embed(source='assets/menu.png')"/>
+	<s:Label color="#ffffff" id="driverLabel" text="Driver" left="153" top="24" width="115" height="40" fontSize="15" backgroundAlpha="0"/>
+	
+	<s:List scrollSnappingMode="leadingEdge"
+			pageScrollingEnabled="true" contentBackgroundAlpha="0" maxHeight="400" chromeColor="0xFFFFFF" fontSize="14" skinClass="spark.skins.mobile.ListSkin" top="49" left="10" right="10" width="100%" dataProvider="{ac}" creationComplete="myList_creationCompleteHandler(event)" itemRenderer="views.MyIRDriver" touchInteractionStart="myList_touchInteractionStartHandler(event)" id="myList"/>
+	
+	<!-- temp buttons, to be deleted-->
+	<s:Button id="searchxs" label="update Group" click="updateDetails()" color="#000000" skinClass="skins.ButtonSkinBlack" bottom="120" x="120" fontWeight="normal" width="120" height="30" alpha="0.9"/>
+	<s:Button id="searchys" label="Group members" click="groupMembers()" color="#000000" skinClass="skins.ButtonSkinBlack" bottom="100" x="120" fontWeight="normal" width="120" height="30" alpha="0.9"/>
+	
+	
+	<s:Label id="license" text="CREATE GROUP" fontSize="20" x="114" bottom="65" width="140" textAlign="center" />
+	<s:Button id="join" x="125" bottom="60" click="createGroups()" color="#000000" fontSize="22"
+			  skinClass="skins.ButtonSkinTrans" fontFamily="License" width="120" height="40"/>
+	
+
+</s:View>

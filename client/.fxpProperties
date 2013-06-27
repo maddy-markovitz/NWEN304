@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<fxpProperties abbreviated="false" authoringTool="Flex Builder" compiles="true" parentProject="ad6cb3d4-617e-4007-96ba-1e3d4c2ba369" projectUUID="ad6cb3d4-617e-4007-96ba-1e3d4c2ba369" pureCatalystProject="false" sdkVersion="4.6.0" uuid="b4078491-3ee9-4223-b2cc-7150c5eebf6e" version="15">
+  <projects/>
+  <src/>
+  <swc>
+    <linked location="sdkPlaceHolder" path="sdkPlaceHolder" position="0" uuid="b4078491-3ee9-4223-b2cc-7150c5eebf6e"/>
+    <linked location="/libs" path="/libs" position="1" uuid="a2f8305f-cb53-40d7-b7e9-38ad1e82ce50"/>
+    <linked location="/libs/flexlayouts-0.7.swc" path="/libs/flexlayouts-0.7.swc" position="2" uuid="a2f8305f-cb53-40d7-b7e9-38ad1e82ce50"/>
+    <linked location="C:/Users/maddy/Downloads/ContactEditor-master/build/ContactEditor.swc" path="/linked-swc/ContactEditor.swc1/ContactEditor.swc" position="3" uuid="b4078491-3ee9-4223-b2cc-7150c5eebf6e"/>
+  </swc>
+  <misc/>
+  <theme/>
+  <mxmlFormattingPrefs groupAttributesByState="true" maxLineWidth="100" mxmlAlignAttributes="true" mxmlAttributeOrder="id,userLabel,includeIn,excludeFrom,visible,x,y,z,left,right,top,bottom,width,height,minWidth,minHeight,maxWidth,maxHeight,label" mxmlKeepAttributeValuesOrganized="true"/>
+</fxpProperties>

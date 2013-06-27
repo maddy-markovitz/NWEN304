@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark" width="400" height="150">
+	
+	<fx:Script>
+		<![CDATA[
+			import events.ScrollingEvent;			
+			import mx.events.FlexEvent;			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.rpc.events.ResultEvent;			
+			import spark.events.ViewNavigatorEvent;
+		
+			//import valueObjects.Employee;
+			
+			public var theData:Object;
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				// DISPLAY the full name of the employee
+				//myTI.text = theData.group_name + ": " + theData.user_id;
+				this.parentApplication.navigator.pushView(mapView);
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				// TAP TO PUSH A NEW VIEW WITH Employee's details
+				var tapEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.TAP_ACTION);
+				//tapEvent.userObj = theData.group_name;
+				//tapEvent.userObj = theData.group_name;
+				this.parentApplication.dispatcher.dispatchEvent(tapEvent);
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				// Remove the employee from the list
+				var removeEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.DELETE_ACTION);
+				removeEvent.userId = int(theData.id);
+				this.parentApplication.dispatcher.dispatchEvent(removeEvent);
+				
+				//group to be deleted from database
+				var deletedItem = theData.group_name;
+				//trace(theData.group_name);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<!--<s:DropShadowFilter inner="true" blurY="120" alpha="0.2" angle="90" distance="20" id="innerS"/>	-->
+	</fx:Declarations>
+	<s:BitmapImage width="100%" height="100%" source="@Embed('assets/BG.jpg')" fillMode="repeat" />
+	
+	<s:HGroup verticalAlign="middle" horizontalAlign="center" width="100%" height="100%">
+		<s:Button icon="@Embed('assets/13.png')" click="button1_clickHandler(event)"/>
+		<s:Button icon="@Embed('assets/icon3.png')" click="button2_clickHandler(event)"/>
+		<s:Button icon="@Embed('assets/icon4.png')" click="button3_clickHandler(event)"/>
+	
+		
+		<!--<s:Button icon="@Embed('assets/gps.png')" click="button1_clickHandler(event)"/>
+		<s:Button icon="@Embed('assets/icon1.png')" click="button2_clickHandler(event)"/>
+		<s:Button icon="@Embed('assets/icon2.png')" click="button4_clickHandler(event)"/>
+		<s:Button icon="@Embed('assets/icon4.png')" click="button3_clickHandler(event)"/>-->
+		
+	</s:HGroup>
+	
+</s:Group>

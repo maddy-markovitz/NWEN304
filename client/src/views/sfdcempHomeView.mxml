@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Employees" xmlns:components="custompopup.components.*"
+		viewActivate="view1_viewActivateHandler(event)"
+		actionBarVisible = "false" backgroundAlpha="0">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.ListSkin;
+			
+			import events.ScrollingEvent;
+			
+			import flashx.textLayout.tlf_internal;
+			
+
+
+
+			[Bindable]protected var ac:ArrayCollection = new ArrayCollection();
+			//public dispatchEvent(event:Event):Boolean
+		
+			
+			protected function myList_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				var myScrollEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.SCROLLING_STARTED);
+				this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);
+				
+				
+			}
+			
+			
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				
+				
+				
+				
+				// TODO Auto-generated method stub
+				trace("ok view");
+			 //myEmployees = data as ArrayCollection;
+			}
+			
+			protected function myList_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+			
+			protected function myList_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				//ac.addItem({firstName:"Soccer practice", lastName:"Nick L", userId:"1", 
+				//	title:"Harbourview, Lower Hutt", city:"11 Cable Street, Wellington", 
+				//	arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri"});
+				
+				ac.addItem({group_name:"Soccer practice", user_id:"Nick L", id:"1", icon:"icon2.png", 
+					origin:"Harbourview, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri"});
+				
+				ac.addItem({group_name:"Loyalty NZ", user_id:"Kirsty M", id:"2", 
+					origin:"Petone, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri"});
+				
+				ac.addItem({group_name:"Gym", user_id:"Kirsty M", id:"3", 
+					origin:"Eastbourne, Lower Hutt", destination:"11 Cable Street, Wellington", 
+					arrival_time:"9am", departure_time:"5:30pm", days:"Mon - Fri"});
+				
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+			}
+			
+			private function onTapItem(event:ScrollingEvent):void
+			{
+				// TODO Auto Generated method stub
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+				//navigator.pushView(views.EmployeeDetailsView, event.userObj);
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+			
+			private function getItemIndexByProperty(array:ArrayCollection, property:String, value:String):Number
+			{
+				
+				for (var i:Number = 0; i < array.length; i++)
+				{
+					var obj:Object = Object(array[i])
+					if (obj[property] == value)
+						return i;
+				}
+				return -1;
+			}
+			
+			private function onDeleteAction(event:ScrollingEvent):void
+			{
+				// TODO Auto Generated method stub
+				
+				var userIndex:int = getItemIndexByProperty(ac, "id", String(event.userId));
+				ac.removeItemAt(userIndex);
+			}
+			
+			//navigation
+			protected function passengerView():void
+			{
+				navigator.pushView(passengerHomeView);
+				
+			}
+			
+			protected function driverView():void
+			{ 
+				
+				navigator.pushView(driverHomeView);
+				
+			}
+			
+			protected function notifyView():void
+			{ 
+				
+				navigator.pushView(notificationsView);
+				
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<!--<fx:Declarations>
+		<s:ArrayCollection id="myEmployees"/>
+		 Place non-visual elements (e.g., services, value objects) here 
+		<s:SkinnablePopUpContainer x="90"  id="myAlert" backgroundAlpha="0">
+			<components:GreyPopUp/>
+			<s:Image id="popUpImage" source="{myList.selectedItem.picture}" width="40" height="40" x="30" y="10"/>
+			<s:Label x="80" y="15" color="0xEEEEEE" text="{myList.selectedItem.group_name}" fontSize="12"/>
+		</s:SkinnablePopUpContainer>
+	</fx:Declarations>-->
+	
+	<s:Button id="passenger" label="passenger" click="passengerView()" left="9" top="10" width="115" skinClass="skins.ButtonSkinTab" height="40" fontSize="13" alpha="1" chromeColor="#ffffff"/>
+	<s:Button id="driver" label="driver" click="driverView()" left="123" top="10" width="115" skinClass="skins.ButtonSkinTab" height="40" fontSize="14" alpha="1" chromeColor="#666666"/>
+	<s:Button id="notifications" click="notifyView()" left="220" top="10" width="110" skinClass="skins.ButtonSkinIcon" height="40" fontSize="12" alpha="1" icon="@Embed(source='assets/notification.png')"/>
+	<s:Rect  left="10" right="10" top="49" bottom="100" radiusX="10" topLeftRadiusX="0" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF" 
+								 
+								 alpha="0.40" />
+				<s:GradientEntry color="0xD8D8D8" 
+								 
+								 alpha="0.4" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:List contentBackgroundAlpha="0" fontSize="14" alternatingItemColors="[0xffffff]" skinClass="spark.skins.mobile.ListSkin" height="80%" top="58" left="18" right="18" width="100%" chromeColor="#000000" useVirtualLayout="false" dataProvider="{ac}" creationComplete="myList_creationCompleteHandler(event)" itemRenderer="views.MyIR" touchInteractionStart="myList_touchInteractionStartHandler(event)" id="myList"/>
+	<!--<s:BusyIndicator width="60" height="60" x="100" y="100"/>-->
+</s:View>

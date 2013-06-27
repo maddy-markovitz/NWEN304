@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:IconItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"  creationComplete="iconitemrenderer1_creationCompleteHandler(event)"
+					xmlns:s="library://ns.adobe.com/flex/spark" opaqueBackground="transparent" 
+					labelField="group_name" paddingTop="22" iconField="icon" iconWidth="60" fontSize="17" color="#ffffff"
+					
+					xmlns:views="views.*" height="74">
+	<fx:Script>
+		<![CDATA[
+			//decorator="@Embed('assets/icon2.png')" iconWidth="64" iconHeight="64"
+			import events.ScrollingEvent;
+			
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			
+			import spark.components.Button;
+			import spark.components.List;
+			import spark.events.ListEvent;
+			
+			private var FLAGSTATE:int = 2;
+			
+			protected function iconitemrenderer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				this.addEventListener(TransformGestureEvent.GESTURE_SWIPE, onSwipe);
+				
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.SCROLLING_STARTED, onScrollAgain);
+				wipeEffect.addEventListener(EffectEvent.EFFECT_END, onEffectEnd);
+				wipeEffectOut.addEventListener(EffectEvent.EFFECT_END, onEffetEndOut);
+			}
+			
+			protected function onSwipe(event:TransformGestureEvent):void
+			{
+				
+				var myScrollEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.SCROLLING_STARTED);
+				
+				if((event.offsetX == -1) && (FLAGSTATE == 2)){
+					
+					this.addChild(actBar);
+					
+					actBar.width = this.width;
+					actBar.height = this.height;
+					actBar.visible = true;
+					actBar.theData = data;
+					actBar.addEventListener(FlexEvent.CREATION_COMPLETE, onItemComplete);
+					FLAGSTATE = 0;
+					
+					this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);
+				}else{
+					if ((event.offsetX == -1)){
+						wipeEffect.play();
+						this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);
+					}
+				}
+			}
+			
+			protected function onItemComplete(event:FlexEvent):void
+			{
+				wipeEffect.play();
+			}
+			
+			private function onScrollAgain(event:ScrollingEvent):void
+			{
+				
+				trace("scrolling");
+				if (FLAGSTATE == 1){
+					wipeEffectOut.play();
+				}
+				
+			}			
+
+			protected function onEffectEnd(event:EffectEvent):void
+			{
+				FLAGSTATE = 1;
+			}
+			
+			protected function onEffetEndOut(event:EffectEvent):void
+			{
+				FLAGSTATE = 0;
+			}
+			
+			override protected function drawBackground(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				//super.drawBackground(unscaledWidth, unscaledHeight);
+				//opaqueBackground = null;
+				// transparent background for hit detection
+				graphics.beginFill(0xffffff, 0.5);
+				graphics.lineStyle();
+				graphics.drawRect(0, 10, 340, 74);
+				graphics.endFill();
+				
+				graphics.beginFill(0x000000, 0.6);
+				graphics.lineStyle();
+				graphics.drawRect(10, 10, 320,69);
+				graphics.endFill();
+				
+				
+				
+				
+				
+				// turn off opaqueBackground since this renderer has some transparency
+				opaqueBackground = null;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+		<s:HGroup id="actBar2" chromeColor="#ff4d58">
+			<s:Button id="btn1" label="action1" chromeColor="#ff4d58" width="50" height="20"/>
+			<s:Button label="action2" chromeColor="#ff4d58" width="50" height="20"/>
+			
+		</s:HGroup>
+		
+		<s:Parallel id="wipeEffect" target="{actBar}">
+			<!--<s:Fade duration="800" alphaFrom="0.7" alphaTo="1" />-->
+			<s:Move duration="300" xFrom="{this.width}" xTo="0"/>
+		</s:Parallel>
+		<s:Parallel id="wipeEffectOut" target="{actBar}">
+			<!--<s:Fade duration="800" alphaFrom="0.7" alphaTo="1" />-->
+			<s:Move duration="150" xTo="{this.width}" xFrom="0"/>
+		</s:Parallel>
+		<views:ActionBGDriver id="actBar" width="{this.width}" height="{this.height}"/>
+	</fx:Declarations>
+	
+
+</s:IconItemRenderer>
