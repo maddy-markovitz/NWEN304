@@ -1151,7 +1151,7 @@ class Session(object):
         self.expires = long(time.time()) + Session._ttl
     
     def __str__(self):
-        return 'Session[user=%s,ttl=%d]' % (self.user, self.ttl)
+        return 'Session[user=%s,ttl=%d,id=%s]' % (self.user, self.ttl, self.id.hex)
     
     def toDict(self):
         """ Create a dict representation for returning as JSON. """
@@ -1198,6 +1198,8 @@ def register():
         # create new session
         s = Session.create(user)
         
+        print 'register(): ' + str(s)
+        
         # return session 'cookie'
         return s.toDict()
         
@@ -1225,6 +1227,8 @@ def login():
             abort(401, 'Invalid user or password.')
         # re-init session
         s = Session.create(user)
+        
+        print 'login(): ' + str(s)
         
         # return session 'cookie'
         return s.toDict()
