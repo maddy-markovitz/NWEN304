@@ -41,6 +41,9 @@ import json, sqlite3, sys, os, uuid, time, traceback, hashlib, re
 from Queue import PriorityQueue
 from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
 
+# hackfix stuff
+_methods = {}
+
 # Backdoor user. If no session id is supplied in a request and this is enabled,
 # a session for the user with id _BD_USER_ID will be used.
 # set _BD_USER_ID to >= 0 to use
@@ -1794,6 +1797,39 @@ def getGroupGPS():
     except:
         print Red + 'Error in getGroupGPS():' + ColorOff
         raise
+
+# hackfix method
+@post('/doeverything')
+def doEverything():
+    methodname = request.json['__method__']
+    method = _methods[methodname]
+    return method()
+
+# hackfix
+_methods['register'] = register
+_methods['login'] = login
+_methods['logout'] = logout
+_methods['createGroup'] = createGroup
+_methods['deleteGroup'] = deleteGroup
+_methods['getGroup'] = getGroup
+_methods['updateGroup'] = updateGroup
+_methods['getDriverGroups'] = getDriverGroups
+_methods['getPassengerGroups'] = getPassengerGroups
+_methods['getPassengers'] = getPassengers
+_methods['addPassenger'] = addPassenger
+_methods['deletePassenger'] = deletePassenger
+_methods['getNotifications'] = getNotifications
+_methods['createGroupInvite'] = createGroupInvite
+_methods['createGroupRequest'] = createGroupRequest
+_methods['deleteGroupInvite'] = deleteGroupInvite
+_methods['deleteGroupRequest'] = deleteGroupRequest
+_methods['acceptGroupInvite'] = acceptGroupInvite
+_methods['acceptGroupRequest'] = acceptGroupRequest
+_methods['declineGroupInvite'] = declineGroupInvite
+_methods['declineGroupRequest'] = declineGroupRequest
+_methods['searchGroups'] = searchGroups
+_methods['setGroupGPS'] = setGroupGPS
+_methods['getGroupGPS'] = getGroupGPS
 
 # 'Main method' : this needs to be at the bottom
 if __name__ == '__main__':
