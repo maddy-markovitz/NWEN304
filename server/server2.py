@@ -1169,10 +1169,11 @@ def getSession():
         raise
     except:
         if _BD_USER_ID >= 0:
+            print 'BD id: %d' % _BD_USER_ID
             # prevent backdoor session from expiring
             _BD_SESSION.renew()
             return _BD_SESSION
-        print 'Invalid session id.'
+        print 'Invalid session id: %s' % str(session_id)
         traceback.print_exc()
         abort(401, 'Invalid session id.')
 
