@@ -1235,9 +1235,11 @@ def login():
         # return session 'cookie'
         return s.toDict()
         
-    except NoSuchUserError:
+    except NoSuchUserError as e:
+        print Red + e.message + ColorOff
         abort(401, 'Invalid user or password.')
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1280,8 +1282,10 @@ def createGroup():
         return group.toDict()
         
     except GroupSanityError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1305,8 +1309,10 @@ def deleteGroup():
         return {}
         
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1329,8 +1335,10 @@ def getGroup():
         return group.toDict()
         
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1360,10 +1368,13 @@ def updateGroup():
         return group.toDict()
         
     except GroupSanityError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1427,8 +1438,10 @@ def getPassengers():
         return res
         
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1455,8 +1468,10 @@ def addPassenger():
         return {}
         
     except (NoSuchUserError, NoSuchGroupError) as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1485,8 +1500,10 @@ def deletePassenger():
         return {}
     
     except (NoSuchUserError, NoSuchGroupError) as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1538,8 +1555,10 @@ def createGroupInvite():
         return ginv.toDict()
         
     except (NoSuchUserError, NoSuchGroupError) as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1564,8 +1583,10 @@ def createGroupRequest():
         return greq.toDict()
         
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1590,8 +1611,10 @@ def deleteGroupInvite():
         return {}
         
     except NoSuchGroupInviteError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1616,8 +1639,10 @@ def deleteGroupRequest():
         return {}
         
     except NoSuchGroupRequestError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1642,8 +1667,10 @@ def acceptGroupInvite():
         return {}
         
     except NoSuchGroupInviteError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1668,8 +1695,10 @@ def acceptGroupRequest():
         return {}
         
     except NoSuchGroupRequestError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1694,8 +1723,10 @@ def declineGroupInvite():
         return {}
         
     except NoSuchGroupInviteError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1720,8 +1751,10 @@ def declineGroupRequest():
         return {}
         
     except NoSuchGroupRequestError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1741,7 +1774,8 @@ def searchGroups():
         groups = Group.search(query)
         return { 'groups' : [g.toDict() for g in groups] }
         
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1771,10 +1805,13 @@ def setGroupGPS():
         return {}
         
     except ValueError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
@@ -1798,8 +1835,10 @@ def getGroupGPS():
         return { 'latitude' : group.gps[0], 'longitude' : group.gps[1] }
         
     except NoSuchGroupError as e:
+        print Red + e.message + ColorOff
         abort(400, e.message)
-    except KeyError:
+    except KeyError as e:
+        print Red + e.message + ColorOff
         abort(400, 'Missing parameter')
     except HTTPError:
         raise
