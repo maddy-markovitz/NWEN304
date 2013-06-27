@@ -1,0 +1,296 @@
+Requests made using parameters:
+session_id, user_id, group_id, request_id, invite_id, latitude, longitude
+
+Can also user phone_number for createGroupInvite()
+
+
+1 logs in
+200
+{"session_expires": 1372296985, "session_id": "cc75d60a9f5e4d219c44bc1a0a7dfc23"}
+
+2 logs in
+200
+{"session_expires": 1372296985, "session_id": "e2b6b227a988431b9c7927e1cafe59f8"}
+
+1 invites 2
+200
+{
+   "group":{
+      "origin":"a",
+      "user_id":1,
+      "destination":"b",
+      "days":"1111111",
+      "group_name":"foo2",
+      "arrival_time":"01:00:00",
+      "seats":99,
+      "group_id":4,
+      "departure_time":"00:00:00"
+   },
+   "invite_id":"3b9d49add19149a58e59bd757912b9be",
+   "user":{
+      "phone_number":2,
+      "user_name":"anon2",
+      "user_id":2
+   }
+}
+
+2 requests g4
+200
+{
+   "group":{
+      "origin":"a",
+      "user_id":1,
+      "destination":"b",
+      "days":"1111111",
+      "group_name":"foo2",
+      "arrival_time":"01:00:00",
+      "seats":99,
+      "group_id":4,
+      "departure_time":"00:00:00"
+   },
+   "user":{
+      "phone_number":2,
+      "user_name":"anon2",
+      "user_id":2
+   },
+   "request_id":"96afbd39bed2456f948eca61e9800064"
+}
+
+1 checks notifications
+200
+{
+   "notifications":[
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "to":{
+            "phone_number":1,
+            "user_name":"anon1",
+            "user_id":1
+         },
+         "tag":"group_request",
+         "user":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "request_id":"96afbd39bed2456f948eca61e9800064",
+         "message":"anon2 has requested to join group foo2."
+      }
+   ]
+}
+
+2 checks notifications
+200
+{
+   "notifications":[
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "invite_id":"3b9d49add19149a58e59bd757912b9be",
+         "to":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "tag":"group_invite",
+         "user":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "message":"anon1 has invited you to group foo2."
+      }
+   ]
+}
+
+1 accepts request
+200
+{}
+
+1 withdraws invite
+200
+{}
+
+1 updates g4 gps
+200
+{}
+
+1 checks notifications
+200
+{
+   "notifications":[
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "to":{
+            "phone_number":1,
+            "user_name":"anon1",
+            "user_id":1
+         },
+         "tag":"group_user_add",
+         "user":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "message":"anon2 was added to group foo2."
+      },
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "longitude":180.222,
+         "to":{
+            "phone_number":1,
+            "user_name":"anon1",
+            "user_id":1
+         },
+         "tag":"group_gps",
+         "latitude":27.3,
+         "message":"-- group gps update --"
+      }
+   ]
+}
+
+2 checks notifications
+200
+{
+   "notifications":[
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "to":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "tag":"group_user_add",
+         "user":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "message":"You were added to group foo2."
+      },
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "to":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "tag":"group_invite_withdraw",
+         "user":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "message":"anon1 has withdrawn their invitation to group foo2."
+      },
+      {
+         "group":{
+            "origin":"a",
+            "user_id":1,
+            "destination":"b",
+            "days":"1111111",
+            "group_name":"foo2",
+            "arrival_time":"01:00:00",
+            "seats":99,
+            "group_id":4,
+            "departure_time":"00:00:00"
+         },
+         "created":1372293385,
+         "longitude":180.222,
+         "to":{
+            "phone_number":2,
+            "user_name":"anon2",
+            "user_id":2
+         },
+         "tag":"group_gps",
+         "latitude":27.3,
+         "message":"-- group gps update --"
+      }
+   ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
