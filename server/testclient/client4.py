@@ -91,7 +91,7 @@ print '2 requests g4'
 r = requests.post(base_path + '/grouprequest', data = """
     {
         "session_id" : "%s",
-        "group_id" : 4,
+        "group_id" : 4
     }
     """ % s2, headers = json_headers)
 
@@ -131,10 +131,10 @@ print r.status_code
 print r.text
 
 print '1 withdraws invite'
-r = requests.post(base_path + '/acceptgrouprequest', data = """
+r = requests.delete(base_path + '/groupinvite', data = """
     {
         "session_id" : "%s",
-        "request_id" : "%s"
+        "invite_id" : "%s"
     }
     """ % (s1, ginv), headers = json_headers)
 
@@ -149,7 +149,7 @@ r = requests.put(base_path + '/gps', data = """
         "latitude" : 27.3,
         "longitude" : 180.222
     }
-    """ % session_id, headers = json_headers)
+    """ % s1, headers = json_headers)
 
 print r.status_code
 print r.text

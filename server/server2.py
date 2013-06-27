@@ -388,6 +388,7 @@ class GroupRequest(object):
         d['request_id'] = self.id.hex
         d['user'] = self.user.toDict()
         d['group'] = self.group.toDict()
+        return d
 
 #
 # ================================
