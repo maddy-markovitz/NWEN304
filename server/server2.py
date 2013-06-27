@@ -1175,7 +1175,7 @@ def getSession():
             # prevent backdoor session from expiring
             _BD_SESSION.renew()
             return _BD_SESSION
-        print 'Invalid session id: %s' % str(session_id)
+        print Red + 'Invalid session id: %s' % str(session_id) + ColorOff
         traceback.print_exc()
         abort(401, 'Invalid session id.')
 
@@ -1198,7 +1198,7 @@ def register():
         # create new session
         s = Session.create(user)
         
-        print 'register(): ' + str(s)
+        print Green + 'register(): phone=%s, name=%s, password=%s, session_id=%s' % (str(phone), str(name), str(password), str(s.id.hex)) + ColorOff
         
         # return session 'cookie'
         return s.toDict()
@@ -1228,7 +1228,7 @@ def login():
         # re-init session
         s = Session.create(user)
         
-        print 'login(): ' + str(s)
+        print Green + 'register(): phone=%s, name=%s, password=%s, session_id=%s' % (str(phone), str(user.name), str(password), str(s.id.hex)) + ColorOff
         
         # return session 'cookie'
         return s.toDict()
@@ -1810,6 +1810,7 @@ def getGroupGPS():
 def doEverything():
     methodname = str(request.json['__method__'])
     method = _methods[methodname]
+    print Cyan + methodname + ColorOff
     return method()
 
 # hackfix
