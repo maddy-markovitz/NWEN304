@@ -39,7 +39,13 @@
 
 import json, sqlite3, sys, os, uuid, time, traceback, hashlib, re
 from Queue import PriorityQueue
-from bottle import route, run, template, get, post, delete, put, request, response, abort, HTTPError
+from bottle import route, run, template, get, post, delete, put, request, response, HTTPError
+from bottle import abort as bottle_abort
+
+# replacement abort for debugging
+def abort(status, message):
+    print Yellow + 'Abort %d: %s' % (status, message) + ColorOff
+    bottle_abort(status, message)
 
 # hackfix stuff
 _methods = {}
@@ -1166,6 +1172,7 @@ def getSession():
         # sessions don't autorenew atm because client has to be able to deal with it anyway.
         if s.expired:
             abort(401, 'Session expired.')
+        print Blue + 'getSession(): phone=%s, name=%s, session_id=%s' % (str(s.user.phone), str(s.user.name), str(s.id.hex)) + ColorOff
         return s
     except HTTPError:
         raise
@@ -1851,7 +1858,7 @@ def getGroupGPS():
 def doEverything():
     methodname = str(request.json['__method__'])
     method = _methods[methodname]
-    print Cyan + methodname + ColorOff
+    print Cyan + '--- /doeverything : %s' % methodname + ColorOff
     return method()
 
 # hackfix

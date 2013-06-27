@@ -10,12 +10,12 @@ server_info = {
 
 base_path = ("%(server_url)s:%(port)s" % server_info)
 
-# login once
+# login once - password fail intentional
 r = requests.post(base_path + '/doeverything', data = """
     {
         "__method__" : "login",
         "phone_number" : 1,
-        "password" : "seecret"
+        "password" : "seecret_notactually"
     }
     """, headers = json_headers)
 

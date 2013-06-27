@@ -155,8 +155,9 @@ print r.status_code
 print r.text
 
 print '1 checks notifications'
-r = requests.get(base_path + '/notifications', data = """
+r = requests.post(base_path + '/doeverything', data = """
     {
+        "__method__" : "getNotifications",
         "session_id" : "%s"
     }
     """ % s1, headers = json_headers)
@@ -165,8 +166,9 @@ print r.status_code
 print r.text
 
 print '2 checks notifications'
-r = requests.get(base_path + '/notifications', data = """
+r = requests.post(base_path + '/doeverything', data = """
     {
+        "__method__" : "getNotifications",
         "session_id" : "%s"
     }
     """ % s2, headers = json_headers)
