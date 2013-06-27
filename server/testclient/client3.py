@@ -4,7 +4,7 @@ json_headers = { 'Content-type' : 'application/json',
 				 'Accept' : 'text/plain'}
 
 server_info = {
-	'server_url' : 'http://localhost',#"http://111.67.18.188",
+	'server_url' : 'http://localhost',#"http://127.0.0.1",
 	'port': "8080"
 }
 

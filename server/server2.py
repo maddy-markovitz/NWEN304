@@ -44,7 +44,7 @@ from bottle import route, run, template, get, post, delete, put, request, respon
 # Backdoor user. If no session id is supplied in a request and this is enabled,
 # a session for the user with id _BD_USER_ID will be used.
 # set _BD_USER_ID to >= 0 to use
-_BD_USER_ID = 1
+_BD_USER_ID = None
 _BD_SESSION = None
 
 _dataBasePath = "CarPool.db"
@@ -837,6 +837,7 @@ class Group(object):
         self._seats = int(g_row['seats'])
         self._days = str(g_row['days'])
         self._users = None
+        self.gps = (float('nan'), float('nan'))
     
     def update(self, name=None, origin=None, destination=None, arrival=None, departure=None, seats=None, days=None):
         """ Update any subset of the editable group parameters. """
@@ -1202,7 +1203,6 @@ def register():
         raise
     except:
         print Red + 'Error in register():' + ColorOff
-        traceback.print_exc();
         raise
 
 # API method to login a user
@@ -1231,7 +1231,6 @@ def login():
         raise
     except:
         print Red + 'Error in login():' + ColorOff
-        traceback.print_exc()
         raise
 
 @post('/logout')
@@ -1245,7 +1244,6 @@ def logout():
         raise
     except:
         print Red + 'Error in logout():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to create a group
@@ -1277,7 +1275,6 @@ def createGroup():
         raise
     except:
         print Red + 'Error in createGroup():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to delete a group
@@ -1303,7 +1300,6 @@ def deleteGroup():
         raise
     except:
         print Red + 'Error in deleteGroup():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to get everything for a group
@@ -1328,7 +1324,6 @@ def getGroup():
         raise
     except:
         print Red + 'Error in getGroup():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to update stuff for a group
@@ -1362,7 +1357,6 @@ def updateGroup():
         raise
     except:
         print Red + 'Error in updateGroup():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to get groups user drives
@@ -1382,7 +1376,6 @@ def getDriverGroups():
         raise
     except:
         print Red + 'Error in getDriverGroups():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to get groups user is a passenger (or driver) of
@@ -1402,7 +1395,6 @@ def getPassengerGroups():
         raise
     except:
         print Red + 'Error in getPassengerGroups():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to get passengers (including driver) of a specified group
@@ -1430,7 +1422,6 @@ def getPassengers():
         raise
     except:
         print Red + 'Error in getPassengers():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to add a passenger to a group
@@ -1442,7 +1433,9 @@ def addPassenger():
     
     try:
         group = Group.forID(request.json['group_id'])
-        user = User.forID(request.json['user_id'])
+        user_id = request.json.get('user_id')
+        phone = request.json.get('phone_number')
+        user = User.forAny(user_id=user_id, phone=phone)
         if not s.user == group.owner:
             abort(403, 'Only the owner of a group can add users.')
         group += user
@@ -1457,7 +1450,6 @@ def addPassenger():
         raise
     except:
         print Red + 'Error in addPassenger():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to delete a passenger from a group. Absent or less than 0 means 'delete me'.
@@ -1488,7 +1480,6 @@ def deletePassenger():
         raise
     except:
         print Red + 'Error in deletePassenger():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to get user's notifications
@@ -1510,7 +1501,6 @@ def getNotifications():
         raise
     except:
         print Red + 'Error in getNotifications():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to invite a user to a group
@@ -1543,7 +1533,6 @@ def createGroupInvite():
         raise
     except:
         print Red + 'Error in createGroupInvite():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to request to join a group
@@ -1570,7 +1559,6 @@ def createGroupRequest():
         raise
     except:
         print Red + 'Error in createGroupRequest():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to withdraw an invite
@@ -1597,7 +1585,6 @@ def deleteGroupInvite():
         raise
     except:
         print Red + 'Error in deleteGroupInvite():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to withdraw a request
@@ -1624,7 +1611,6 @@ def deleteGroupRequest():
         raise
     except:
         print Red + 'Error in deleteGroupRequest():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to accept an invitation to a group
@@ -1651,7 +1637,6 @@ def acceptGroupInvite():
         raise
     except:
         print Red + 'Error in acceptGroupInvite():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to accept a request to join a group
@@ -1678,7 +1663,6 @@ def acceptGroupRequest():
         raise
     except:
         print Red + 'Error in acceptGroupRequest():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to decline an invitation to a group
@@ -1705,7 +1689,6 @@ def declineGroupInvite():
         raise
     except:
         print Red + 'Error in declineGroupInvite():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to decline a request to join a group
@@ -1732,7 +1715,6 @@ def declineGroupRequest():
         raise
     except:
         print Red + 'Error in declineGroupRequest():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to search for groups. WARNING: this isn't google - lower your expectations.
@@ -1753,12 +1735,11 @@ def searchGroups():
         raise
     except:
         print Red + 'Error in searchGroups():' + ColorOff
-        traceback.print_exc()
         raise
 
 # API method to update the location of a group's driver
 @put('/gps')
-def updateGroupGPS():
+def setGroupGPS():
     s = getSession()
     
     # TODO test this
@@ -1771,8 +1752,10 @@ def updateGroupGPS():
         if s.user != group.owner:
             abort(403, 'Only the group owner (==driver) can update group location.')
         # send notification to each user in the group
-        for user in group:
-            GroupGPSNotification(user, group, latitude, longitude)
+        #for user in group:
+        #    GroupGPSNotification(user, group, latitude, longitude)
+        # set group location
+        group.gps = (latitude, longitude)
         return {}
         
     except ValueError as e:
@@ -1784,8 +1767,32 @@ def updateGroupGPS():
     except HTTPError:
         raise
     except:
-        print Red + 'Error in updateGroupGPS():' + ColorOff
-        traceback.print_exc()
+        print Red + 'Error in setGroupGPS():' + ColorOff
+        raise
+
+# API method to get the location of the driver of a group
+@get('/gps')
+def getGroupGPS():
+    s = getSession()
+    
+    # TODO test this
+    
+    try:
+        group = Group.forID(request.json['group_id'])
+        # can only get location if in group
+        if not s.user in group:
+            abort(403, 'Only group members can see the group location.')
+        # get group location
+        return { 'latitude' : group.gps[0], 'longitude' : group.gps[1] }
+        
+    except NoSuchGroupError as e:
+        abort(400, e.message)
+    except KeyError:
+        abort(400, 'Missing parameter')
+    except HTTPError:
+        raise
+    except:
+        print Red + 'Error in getGroupGPS():' + ColorOff
         raise
 
 # 'Main method' : this needs to be at the bottom
